@@ -9,7 +9,8 @@ from datetime import datetime
 class SistemaContableApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Sistema Contable - Empresa Lechera")
+        self.root.title("V.A.C.A")
+        root.iconbitmap("logo.ico")
         self.root.geometry("1200x800")
         
         DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
