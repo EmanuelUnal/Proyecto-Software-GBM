@@ -42,7 +42,7 @@ class SistemaContableApp:
 
         self.crear_tab_factura()
         self.crear_tab_analisis()
-        self.crear_tab_gastos_mes()
+        self.crear_tab_revision_de_gastos()
         self.crear_tab_pedidos()
         self.crear_tab_retenciones()
 
@@ -253,9 +253,9 @@ class SistemaContableApp:
     # -------------------------
     # TAB: Gastos del Mes
     # -------------------------
-    def crear_tab_gastos_mes(self):
+    def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="Gastos del Mes")
+        self.notebook.add(frame, text="Revisión de Gastos Mensuales")
 
         ttk.Label(frame, text="Consulta rápida de gastos mensuales (Placeholder)").pack(pady=20)
 
