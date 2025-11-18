@@ -49,7 +49,11 @@ class SistemaContableApp:
         self.entry_cantidad = ttk.Entry(frame)
         self.entry_cantidad.grid(row=3, column=1, padx=10, pady=5)
 
-        ttk.Button(frame, text="Agregar Producto").grid(row=4, column=1, padx=10, pady=10)
+        ttk.Label(frame, text="Concepto").grid(row=4, column=0, padx=10, pady=5)#puede ser segun tipo de producto(agroquimicos, concentrado, maquinaria, gastos administrativos, jornales, etc...)
+        self.entry_concepto = ttk.Entry(frame)
+        self.entry_concepto.grid(row=4, column=1, padx=10, pady=5)
+
+        ttk.Button(frame, text="Agregar Producto").grid(row=5, column=1, padx=10, pady=10)
 
         columns = ("producto", "cantidad")
         self.productos_table = ttk.Treeview(frame, columns=columns, show="headings")
