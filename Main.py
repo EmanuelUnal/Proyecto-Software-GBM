@@ -217,7 +217,13 @@ class SistemaContableApp:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
-        ttk.Label(frame, text="Herramientas de análisis (Placeholder)").pack(pady=20)
+        fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
+        fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
+
+        ttk.Label(fb, text="Cantidad de meses a analizar: ").grid(row=0, column=0, padx=10, pady=5)
+        self.cantidad_meses = ttk.Entry(fb)
+        self.cantidad_meses.grid(row=0, column=1, padx=10, pady=5)
+
 
     # -------------------------
     # TAB: Gastos del Mes
