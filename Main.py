@@ -1,23 +1,46 @@
 import sqlite3
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 from pathlib import Path
 from datetime import datetime
 
+DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
 
-class SistemaContableApp:
+class LoginApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("V.A.C.A")
-        root.iconbitmap("logo.ico")
-        self.root.geometry("1200x800")
-        
-        DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
+        self.root.title("V.A.C.A - Login / Registro")
+        try:
+            root.iconbitmap("logo.ico")
+        except:
+            pass
+        self.root.geometry("480x320")
+
+        # Conexión a BD
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
+        self._ensure_tables()
 
-        # Asegurar que la tabla existe (si no, crearla)
+        # Frames
+        self.frame_login = ttk.Frame(self.root, padding=16)
+        self.frame_register = ttk.Frame(self.root, padding=16)
+
+        self.build_login_frame()
+        self.build_register_frame()
+        self.show_login()
+
+    def _ensure_tables(self):
+        # Tabla de usuarios
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                documento TEXT PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                correo TEXT NOT NULL,
+                contrasena TEXT NOT NULL,
+                rol TEXT NOT NULL
+            )
+        """)
+        # Tabla de facturas
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS facturas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,18 +61,161 @@ class SistemaContableApp:
         """)
         self.con.commit()
 
+    # ---------------- LOGIN ----------------
+    def build_login_frame(self):
+        frm = self.frame_login
+        for w in frm.winfo_children():
+            w.destroy()
+
+        ttk.Label(frm, text="Iniciar Sesión", font=("Segoe UI", 14, "bold")).pack(pady=(0,10))
+
+        inner = ttk.Frame(frm)
+        inner.pack()
+
+        ttk.Label(inner, text="Documento (ID):").grid(row=0, column=0, sticky="e", padx=6, pady=6)
+        self.e_doc = ttk.Entry(inner, width=30)
+        self.e_doc.grid(row=0, column=1, padx=6, pady=6)
+
+        ttk.Label(inner, text="Contraseña:").grid(row=1, column=0, sticky="e", padx=6, pady=6)
+        self.e_pw = ttk.Entry(inner, show="*", width=30)
+        self.e_pw.grid(row=1, column=1, padx=6, pady=6)
+
+        btn_frame = ttk.Frame(frm)
+        btn_frame.pack(pady=12)
+
+        ttk.Button(btn_frame, text="Iniciar Sesión", command=self.do_login).grid(row=0, column=0, padx=8)
+        ttk.Button(btn_frame, text="Registrar Nuevo Usuario", command=self.show_register).grid(row=0, column=1, padx=8)
+        ttk.Button(btn_frame, text="Salir", command=self.root.quit).grid(row=0, column=2, padx=8)
+
+        ttk.Label(frm, text="Registra usuarios como Contadora o Auxiliar Contable", foreground="#333").pack(pady=(8,0))
+
+    def show_login(self):
+        self.frame_register.pack_forget()
+        self.frame_login.pack(fill=tk.BOTH, expand=True)
+
+    # ---------------- REGISTRO ----------------
+    def build_register_frame(self):
+        frm = self.frame_register
+        for w in frm.winfo_children():
+            w.destroy()
+
+        ttk.Label(frm, text="Registro", font=("Segoe UI", 14, "bold")).pack(pady=(0,10))
+
+        fields = ["Nombre completo", "Documento (ID)", "Correo", "Contraseña", "Confirmar contraseña"]
+        self.reg_entries = {}
+        for field in fields:
+            ttk.Label(frm, text=field+":").pack(anchor="w", padx=10, pady=2)
+            e = ttk.Entry(frm, width=36, show="*" if "Contraseña" in field else "")
+            e.pack(padx=10, pady=2)
+            self.reg_entries[field] = e
+
+        ttk.Label(frm, text="Rol:").pack(anchor="w", padx=10, pady=2)
+        self.rol_var = tk.StringVar(value="Auxiliar Contable")
+        rol_frame = ttk.Frame(frm)
+        rol_frame.pack(anchor="w", padx=10)
+        ttk.Radiobutton(rol_frame, text="Auxiliar Contable", variable=self.rol_var, value="Auxiliar Contable").pack(side=tk.LEFT, padx=4)
+        ttk.Radiobutton(rol_frame, text="Contadora", variable=self.rol_var, value="Contadora").pack(side=tk.LEFT, padx=4)
+
+        btn_frame = ttk.Frame(frm)
+        btn_frame.pack(pady=12)
+        ttk.Button(btn_frame, text="Registrar", command=self.do_register).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btn_frame, text="Volver al Login", command=self.show_login).pack(side=tk.LEFT, padx=6)
+
+    def show_register(self):
+        self.frame_login.pack_forget()
+        self.frame_register.pack(fill=tk.BOTH, expand=True)
+
+    # ---------------- FUNCIONES ----------------
+    def do_register(self):
+        nombre = self.reg_entries["Nombre completo"].get().strip()
+        doc = self.reg_entries["Documento (ID)"].get().strip()
+        correo = self.reg_entries["Correo"].get().strip()
+        pw1 = self.reg_entries["Contraseña"].get()
+        pw2 = self.reg_entries["Confirmar contraseña"].get()
+        rol = self.rol_var.get()
+
+        if not all([nombre, doc, correo, pw1, pw2, rol]):
+            messagebox.showwarning("Error", "Todos los campos son obligatorios")
+            return
+        if pw1 != pw2:
+            messagebox.showwarning("Error", "Las contraseñas no coinciden")
+            return
+        self.cursor.execute("SELECT documento FROM usuarios WHERE documento = ?", (doc,))
+        if self.cursor.fetchone():
+            messagebox.showerror("Error", "Documento ya registrado")
+            return
+        self.cursor.execute("INSERT INTO usuarios (documento, nombre, correo, contrasena, rol) VALUES (?, ?, ?, ?, ?)",
+                            (doc, nombre, correo, pw1, rol))
+        self.con.commit()
+        messagebox.showinfo("Éxito", f"Usuario registrado como {rol}")
+        self.show_login()
+
+    def do_login(self):
+        doc = self.e_doc.get().strip()
+        pw = self.e_pw.get()
+        if not doc or not pw:
+            messagebox.showwarning("Faltan datos", "Documento y contraseña son obligatorios")
+            return
+        self.cursor.execute("SELECT documento, nombre, correo, contrasena, rol FROM usuarios WHERE documento = ?", (doc,))
+        row = self.cursor.fetchone()
+        if not row:
+            messagebox.showerror("Error", "Documento no registrado")
+            return
+        if pw != row[3]:
+            messagebox.showerror("Error", "Contraseña incorrecta")
+            return
+        usuario = {"documento": row[0], "nombre": row[1], "correo": row[2], "rol": row[4]}
+        self.launch_system(usuario)
+
+    def launch_system(self, usuario):
+        for w in self.root.winfo_children():
+            w.destroy()
+        app = SistemaContableApp(self.root, db_connection=self.con, usuario=usuario, cursor=self.cursor)
+        self.system_app = app
+
+# -----------------
+# Sistema Contable 
+# -----------------
+class SistemaContableApp:
+    def __init__(self, root, db_connection, usuario, cursor):
+        self.root = root
+        self.con = db_connection
+        self.cursor = cursor
+        self.usuario = usuario
+        self.root.title(f"V.A.C.A")
+        try:
+            root.iconbitmap("logo.ico")
+        except:
+            pass
+        self.root.geometry("1100x720")
+
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill='both', expand=True)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
 
-        self.crear_tab_factura()
-        self.crear_tab_analisis()
-        self.crear_tab_revision_de_gastos()
-        self.crear_tab_pedidos()
-        self.crear_tab_retenciones()
+        rol = self.usuario.get("rol", "")
+        if rol == "Auxiliar Contable":
+            self.crear_tab_factura()
+            self.generar_pedido()
+        elif rol == "Contadora":
+            self.crear_tab_analisis()
+            self.crear_tab_revision_de_gastos()
+            self.crear_tab_retenciones()
 
-    # -------------------------
-    # TAB: Registrar Facturas
-    # -------------------------
+        self._create_top_bar()
+
+    def _create_top_bar(self):
+        top = ttk.Frame(self.root)
+        top.pack(fill=tk.X, pady=6, padx=6)
+        ttk.Label(top, text=f"Usuario: {self.usuario['nombre']}").pack(side=tk.LEFT, padx=(6,12))
+        ttk.Label(top, text=f"Rol: {self.usuario['rol']}").pack(side=tk.LEFT)
+        ttk.Button(top, text="Cerrar Sesión", command=self.do_logout).pack(side=tk.RIGHT)
+
+    def do_logout(self):
+        if messagebox.askyesno("Confirmar", "¿Cerrar sesión?"):
+            for w in self.root.winfo_children():
+                w.destroy()
+            LoginApp(self.root)
+
     def crear_tab_factura(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Registrar Factura")
@@ -215,18 +381,6 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
-        def cambiar1():
-            r1.config(text="1")
-            r2.config(text="1")
-            r3.config(text="1")
-        def cambiar2():
-            r4.config(text="2")
-            r5.config(text="2")
-            r6.config(text="2")
-        def cambiar3():
-            r7.config(text="3")
-            r8.config(text="3")
-            r9.config(text="3")    
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
@@ -234,42 +388,29 @@ class SistemaContableApp:
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
         ttk.Label(fb, text="Empresas:").grid(row=1, column=0, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar", command=cambiar1).grid(row=3, column=0, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
-        ttk.Button(fb, text="Evaluar",command=cambiar2).grid(row=3, column=1, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Producto:").grid(row=1, column=2, padx=10, pady=5)
         ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar",command=cambiar3).grid(row=3, column=2, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=2, padx=10, pady=5)
 
         ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
-        r1 = ttk.Label(fb, text="R1,1")
-        r2 = ttk.Label(fb, text="R2,1")
-        r3 = ttk.Label(fb, text="R3,1")
-        r4 = ttk.Label(fb, text="R1,2")
-        r5 = ttk.Label(fb, text="R2,2")
-        r6 = ttk.Label(fb, text="R3,2")
-        r7 = ttk.Label(fb, text="R1,3")
-        r8 = ttk.Label(fb, text="R2,3")
-        r9 = ttk.Label(fb, text="R3,3")
-        r1.grid(row=10, column=0, padx=10, pady=5)
-        r2.grid(row=11, column=0, padx=10, pady=5)
-        r3.grid(row=12, column=0, padx=10, pady=5)
-        r4.grid(row=10, column=1, padx=10, pady=5)
-        r5.grid(row=11, column=1, padx=10, pady=5)
-        r6.grid(row=12, column=1, padx=10, pady=5)
-        r7.grid(row=10, column=2, padx=10, pady=5)
-        r8.grid(row=11, column=2, padx=10, pady=5)
-        r9.grid(row=12, column=2, padx=10, pady=5)
-
-
-    # -------------------------
-    # TAB: Gastos del Mes
-    # -------------------------
+        r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
+        r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
+        r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
+        r4 = ttk.Label(fb, text="R1,2").grid(row=10, column=1, padx=10, pady=5)
+        r5 = ttk.Label(fb, text="R2,2").grid(row=11, column=1, padx=10, pady=5)
+        r6 = ttk.Label(fb, text="R3,2").grid(row=12, column=1, padx=10, pady=5)
+        r7 = ttk.Label(fb, text="R1,3").grid(row=10, column=2, padx=10, pady=5)
+        r8 = ttk.Label(fb, text="R2,3").grid(row=11, column=2, padx=10, pady=5)
+        r9 = ttk.Label(fb, text="R3,3").grid(row=12, column=2, padx=10, pady=5)
+        
     def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
@@ -279,42 +420,87 @@ class SistemaContableApp:
     # -------------------------
     # TAB: Registrar Pedidos
     # -------------------------
-    def crear_tab_pedidos(self):
-        frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="Registrar Pedido")
 
-        ttk.Label(frame, text="Proveedor:").grid(row=0, column=0, padx=10, pady=5)
-        self.entry_proveedor_pedido = ttk.Entry(frame)
+    def agregar_producto_tabla(self):
+        producto = self.entry_producto_pedido.get()
+        cantidad = self.entry_cantidad_pedido.get()
+
+        if not producto or not cantidad.isdigit():
+            messagebox.showwarning("Error", "Debe ingresar un producto y una cantidad válida.")
+            return
+
+        self.pedido_table.insert("", "end", values=(producto, cantidad))
+        self.entry_producto_pedido.delete(0, "end")
+        self.entry_cantidad_pedido.delete(0, "end")
+
+    def registrar_pedido(self):
+        proveedor = self.entry_proveedor_pedido.get()
+        fecha = self.entry_fecha_pedido.get()
+        estado = self.combo_estado.get()
+        productos = self.pedido_table.get_children()
+
+        if not proveedor or not fecha or not productos:
+            messagebox.showerror("Error", "Todos los campos y al menos un producto son obligatorios.")
+            return
+
+        codigo_pedido = "PED-" + datetime.now().strftime("%Y%m%d%H%M%S")
+
+        for item in productos:
+            producto, cantidad = self.pedido_table.item(item, "values")
+            self.tabla_registro_pedidos.insert("", "end", values=(codigo_pedido, producto, cantidad))
+
+        messagebox.showinfo("Pedido Registrado",
+                            f"Pedido guardado correctamente.\nCódigo generado: {codigo_pedido}")
+
+        for item in productos:
+            self.pedido_table.delete(item)
+
+    def generar_pedido(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Generar Pedido")
+
+        ttk.Label(frame, text="Proveedor:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        self.entry_proveedor_pedido = ttk.Entry(frame, width=30)
         self.entry_proveedor_pedido.grid(row=0, column=1, padx=10, pady=5)
 
-        ttk.Label(frame, text="Fecha (YYYY-MM-DD):").grid(row=1, column=0, padx=10, pady=5)
-        self.entry_fecha_pedido = ttk.Entry(frame)
+        ttk.Label(frame, text="Fecha (YYYY-MM-DD):").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        self.entry_fecha_pedido = ttk.Entry(frame, width=20)
         self.entry_fecha_pedido.grid(row=1, column=1, padx=10, pady=5)
 
-        ttk.Label(frame, text="Producto:").grid(row=2, column=0, padx=10, pady=5)
+        ttk.Label(frame, text="Producto:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.entry_producto_pedido = ttk.Entry(frame)
         self.entry_producto_pedido.grid(row=2, column=1, padx=10, pady=5)
 
-        ttk.Label(frame, text="Cantidad:").grid(row=3, column=0, padx=10, pady=5)
+        ttk.Label(frame, text="Cantidad:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
         self.entry_cantidad_pedido = ttk.Entry(frame)
         self.entry_cantidad_pedido.grid(row=3, column=1, padx=10, pady=5)
 
-        ttk.Label(frame, text="Estado del Pedido:").grid(row=4, column=0, padx=10, pady=5)
-        self.combo_estado = ttk.Combobox(frame, values=["Pendiente", "En Proceso", "Entregado", "Cancelado"])
+        ttk.Label(frame, text="Estado del Pedido:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
+        self.combo_estado = ttk.Combobox(frame, values=["Pendiente", "En Proceso", "Entregado", "Cancelado"], width=20)
         self.combo_estado.grid(row=4, column=1, padx=10, pady=5)
+        self.combo_estado.current(0)
 
-        ttk.Button(frame, text="Agregar Producto al Pedido").grid(row=5, column=1, padx=10, pady=10)
+        ttk.Button(frame, text="Agregar Producto",
+                command=self.agregar_producto_tabla).grid(row=5, column=1, pady=10)
 
-        columns = ("producto", "cantidad", "estado")
-        self.pedido_table = ttk.Treeview(frame, columns=columns, show="headings")
+        columnas = ("producto", "cantidad")
+        self.pedido_table = ttk.Treeview(frame, columns=columnas, show="headings", height=8)
         self.pedido_table.heading("producto", text="Producto")
         self.pedido_table.heading("cantidad", text="Cantidad")
-        self.pedido_table.heading("estado", text="Estado")
-        self.pedido_table.grid(row=6, column=0, columnspan=3, padx=10, pady=10)
+        self.pedido_table.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
 
-    # -------------------------
-    # TAB: Retenciones
-    # -------------------------
+        ttk.Button(frame, text="Registrar Pedido",
+                command=self.registrar_pedido).grid(row=7, column=0, columnspan=2, pady=15)
+
+        ttk.Label(frame, text="Registro de Pedidos").grid(row=0, column=3, padx=10, pady=10)
+
+        columnas_registro = ("codigo", "producto", "cantidad")
+        self.tabla_registro_pedidos = ttk.Treeview(frame, columns=columnas_registro, show="headings", height=18)
+        self.tabla_registro_pedidos.heading("codigo", text="Código")
+        self.tabla_registro_pedidos.heading("producto", text="Producto")
+        self.tabla_registro_pedidos.heading("cantidad", text="Cantidad")
+        self.tabla_registro_pedidos.grid(row=1, column=3, rowspan=10, padx=10, pady=10, sticky="n")
+
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
         self.notebook.add(frame_retenciones, text="Retenciones")
@@ -350,15 +536,11 @@ class SistemaContableApp:
         self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
    
     def cargar_facturas(self):
-        # Selecciona las columnas en el mismo orden que las columnas de la Treeview 'productos_table'
         self.cursor.execute("""
             SELECT proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido, subtotal, total, id
             FROM facturas
         """)
         rows = self.cursor.fetchall()
-        # Para la tabla de productos usamos sólo las primeras 11 columnas (las que mostró el Treeview)
-        # retornamos también valores auxiliares para otras vistas cuando sea necesario
-        # orden de retorno: (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido, subtotal, total, id)
         return rows
     
     def calcular_ret(self):
@@ -386,9 +568,7 @@ class SistemaContableApp:
                 self.retenciones_table.insert("", "end", values=filas)
         self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
 
-
-
-
-root = tk.Tk()
-app = SistemaContableApp(root)
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    LoginApp(root)
+    root.mainloop()
