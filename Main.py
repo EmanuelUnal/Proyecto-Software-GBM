@@ -265,9 +265,6 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
-        #self.tipo_producto = ttk.Entry(fb, text = "General")
-        #self.tipo_producto.grid(row=1, column=1, padx=10, pady=5)
-        #ttk.Label(fb, text="(Vacío para la información general)").grid(row=2, column=0, padx=10, pady=0)
 
 
     # -------------------------
