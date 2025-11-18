@@ -1,13 +1,18 @@
 import sqlite3
 import tkinter as tk
 from tkinter import ttk
+from pathlib import Path
 
 
 class SistemaContableApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Sistema Contable - Empresa Lechera")
-        self.root.geometry("900x600")
+        self.root.geometry("1200x800")
+        
+        DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
+        self.con = sqlite3.connect(DB_PATH)
+        self.cursor = self.con.cursor()
 
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill='both', expand=True)
@@ -18,8 +23,7 @@ class SistemaContableApp:
         self.crear_tab_pedidos()
         self.crear_tab_retenciones()
 
-        self.con = sqlite3.connect("contabilidad_lechera.db")
-        self.cursor = self.con.cursor()
+
 
 
     # -------------------------
@@ -113,12 +117,32 @@ class SistemaContableApp:
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
         self.notebook.add(frame_retenciones, text="Retenciones")
-        ttk.Label(frame_retenciones, text="Facturas Registradas", font=("Arial", 12)).pack(pady=10)
+        
+        columns = ("id", "proveedor", "subtotal", "retencion", "total")
+        self.retenciones_table = ttk.Treeview(frame_retenciones, columns=columns, show="headings")
+        self.retenciones_table.heading("id", text="ID")
+        self.retenciones_table.heading("proveedor", text="Proveedor")
+        self.retenciones_table.heading("subtotal", text="Subtotal")
+        self.retenciones_table.heading("retencion", text="Retención")
+        self.retenciones_table.heading("total", text="Total")
+        self.retenciones_table.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
+        #self.retenciones_table.pack(fill='x', expand=True, padx=10, pady=10)
+        ttk.Button(frame_retenciones, text="Calcular Retenciones", command=self.calcular_ret()).grid(row=0, column=0, padx=10, pady=10)
+        facturas = self.cargar_facturas()
+        for f in facturas:
+            self.retenciones_table.insert("", "end", values=f)    
+        
 
 
     def cargar_facturas(self):
-        self.cursor.execute("SELECT * FROM facturas")
+        self.cursor.execute("SELECT id, proveedor, subtotal, retencion, total FROM facturas")
         facturas = self.cursor.fetchall()
+        return facturas
+    
+    def calcular_ret(self):
+        return None
+
+
 
 
 root = tk.Tk()
