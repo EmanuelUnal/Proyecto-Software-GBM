@@ -19,7 +19,7 @@ class SistemaContableApp:
         self.crear_tab_retenciones()
 
         self.con = sqlite3.connect("contabilidad_lechera.db")
-        self.cursor = self.conn.cursor()
+        self.cursor = self.con.cursor()
 
 
     # -------------------------
@@ -106,12 +106,19 @@ class SistemaContableApp:
         self.pedido_table.heading("cantidad", text="Cantidad")
         self.pedido_table.heading("estado", text="Estado")
         self.pedido_table.grid(row=6, column=0, columnspan=3, padx=10, pady=10)
-        # -----------------
-        # TAB 5: Retenciones
-        # -----------------
+
+    # -------------------------
+    # TAB: Retenciones
+    # -------------------------
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
         self.notebook.add(frame_retenciones, text="Retenciones")
+        ttk.Label(frame_retenciones, text="Facturas Registradas", font=("Arial", 12)).pack(pady=10)
+
+
+    def cargar_facturas(self):
+        self.cursor.execute("SELECT * FROM facturas")
+        facturas = self.cursor.fetchall()
 
 
 root = tk.Tk()
