@@ -13,7 +13,6 @@ class SistemaContableApp:
         self.root.geometry("1200x800")
         
         DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
-        print("DB cargada desde:", DB_PATH)
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
 
@@ -296,7 +295,6 @@ class SistemaContableApp:
 
         self.lbl_resultado = ttk.Label(frame_retenciones, text="0",  background="#e0e0e0", foreground="#000000")
         self.lbl_resultado.grid(row=4, column=0, padx=10, pady=0, sticky='w')
-        #self.lbl_resultado.config(text=str("aaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 
 
 
