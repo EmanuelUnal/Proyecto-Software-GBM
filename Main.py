@@ -215,6 +215,18 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+        def cambiar1():
+            r1.config(text="1")
+            r2.config(text="1")
+            r3.config(text="1")
+        def cambiar2():
+            r4.config(text="2")
+            r5.config(text="2")
+            r6.config(text="2")
+        def cambiar3():
+            r7.config(text="3")
+            r8.config(text="3")
+            r9.config(text="3")    
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
@@ -222,30 +234,37 @@ class SistemaContableApp:
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
         ttk.Label(fb, text="Empresas:").grid(row=1, column=0, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar", command=cambiar1).grid(row=3, column=0, padx=10, pady=5)
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar",command=cambiar2).grid(row=3, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Producto:").grid(row=1, column=2, padx=10, pady=5)
         ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=2, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar",command=cambiar3).grid(row=3, column=2, padx=10, pady=5)
 
         ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
-        r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
-        r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
-        r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
-        r4 = ttk.Label(fb, text="R1,2").grid(row=10, column=1, padx=10, pady=5)
-        r5 = ttk.Label(fb, text="R2,2").grid(row=11, column=1, padx=10, pady=5)
-        r6 = ttk.Label(fb, text="R3,2").grid(row=12, column=1, padx=10, pady=5)
-        r7 = ttk.Label(fb, text="R1,3").grid(row=10, column=2, padx=10, pady=5)
-        r8 = ttk.Label(fb, text="R2,3").grid(row=11, column=2, padx=10, pady=5)
-        r9 = ttk.Label(fb, text="R3,3").grid(row=12, column=2, padx=10, pady=5)
-        
-        
+        r1 = ttk.Label(fb, text="R1,1")
+        r2 = ttk.Label(fb, text="R2,1")
+        r3 = ttk.Label(fb, text="R3,1")
+        r4 = ttk.Label(fb, text="R1,2")
+        r5 = ttk.Label(fb, text="R2,2")
+        r6 = ttk.Label(fb, text="R3,2")
+        r7 = ttk.Label(fb, text="R1,3")
+        r8 = ttk.Label(fb, text="R2,3")
+        r9 = ttk.Label(fb, text="R3,3")
+        r1.grid(row=10, column=0, padx=10, pady=5)
+        r2.grid(row=11, column=0, padx=10, pady=5)
+        r3.grid(row=12, column=0, padx=10, pady=5)
+        r4.grid(row=10, column=1, padx=10, pady=5)
+        r5.grid(row=11, column=1, padx=10, pady=5)
+        r6.grid(row=12, column=1, padx=10, pady=5)
+        r7.grid(row=10, column=2, padx=10, pady=5)
+        r8.grid(row=11, column=2, padx=10, pady=5)
+        r9.grid(row=12, column=2, padx=10, pady=5)
         #self.tipo_producto = ttk.Entry(fb, text = "General")
         #self.tipo_producto.grid(row=1, column=1, padx=10, pady=5)
         #ttk.Label(fb, text="(Vacío para la información general)").grid(row=2, column=0, padx=10, pady=0)
