@@ -11,6 +11,7 @@ class SistemaContableApp:
         self.root.geometry("1200x800")
         
         DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
+        print("DB cargada desde:", DB_PATH)
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
 
@@ -125,12 +126,25 @@ class SistemaContableApp:
         self.retenciones_table.heading("subtotal", text="Subtotal")
         self.retenciones_table.heading("retencion", text="Retención")
         self.retenciones_table.heading("total", text="Total")
-        self.retenciones_table.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
-        #self.retenciones_table.pack(fill='x', expand=True, padx=10, pady=10)
-        ttk.Button(frame_retenciones, text="Calcular Retenciones", command=self.calcular_ret()).grid(row=0, column=0, padx=10, pady=10)
+        self.retenciones_table.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
+
+        frame_botones = ttk.Frame(frame_retenciones)
+        frame_botones.grid(row=4, column=0, columnspan=4, pady=10)
+        ttk.Button(frame_retenciones, text="Calcular Retenciones", command=self.calcular_ret).grid(row=1, column=0, padx=10, sticky='w', pady=0)
         facturas = self.cargar_facturas()
         for f in facturas:
-            self.retenciones_table.insert("", "end", values=f)    
+            self.retenciones_table.insert("", "end", values=f)
+
+        frame_label_retenciones = ttk.Frame(frame_retenciones)
+        frame_label_retenciones.grid(row=5, column=0, columnspan=4, pady=10)
+        ttk.Label(frame_retenciones, text="Retención total").grid(row=2, column=0, padx=10, sticky='w', pady=0)
+
+        self.lbl_resultado = ttk.Label(frame_retenciones, text="0",  background="#e0e0e0", foreground="#000000")
+        self.lbl_resultado.grid(row=4, column=0, padx=10, pady=0, sticky='w')
+        #self.lbl_resultado.config(text=str("aaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+
+
+
         
 
 
@@ -140,7 +154,9 @@ class SistemaContableApp:
         return facturas
     
     def calcular_ret(self):
-        return None
+        facturas = self.cargar_facturas()
+        total_retencion = sum(f[3] for f in facturas)
+        self.lbl_resultado.config(text=str("$ "+str(total_retencion)))
 
 
 
