@@ -220,9 +220,34 @@ class SistemaContableApp:
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
-        ttk.Label(fb, text="Cantidad de meses a analizar: ").grid(row=0, column=0, padx=10, pady=5)
-        self.cantidad_meses = ttk.Entry(fb)
-        self.cantidad_meses.grid(row=0, column=1, padx=10, pady=5)
+        ttk.Label(fb, text="Empresas:").grid(row=1, column=0, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
+
+        ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
+
+        ttk.Label(fb, text="Producto:").grid(row=1, column=2, padx=10, pady=5)
+        ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=2, padx=10, pady=5)
+
+        ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
+        ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
+        ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
+        
+        r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
+        r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
+        r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
+        r4 = ttk.Label(fb, text="R1,2").grid(row=10, column=1, padx=10, pady=5)
+        r5 = ttk.Label(fb, text="R2,2").grid(row=11, column=1, padx=10, pady=5)
+        r6 = ttk.Label(fb, text="R3,2").grid(row=12, column=1, padx=10, pady=5)
+        r7 = ttk.Label(fb, text="R1,3").grid(row=10, column=2, padx=10, pady=5)
+        r8 = ttk.Label(fb, text="R2,3").grid(row=11, column=2, padx=10, pady=5)
+        r9 = ttk.Label(fb, text="R3,3").grid(row=12, column=2, padx=10, pady=5)
+        
+        
+        #self.tipo_producto = ttk.Entry(fb, text = "General")
+        #self.tipo_producto.grid(row=1, column=1, padx=10, pady=5)
+        #ttk.Label(fb, text="(Vacío para la información general)").grid(row=2, column=0, padx=10, pady=0)
 
 
     # -------------------------
