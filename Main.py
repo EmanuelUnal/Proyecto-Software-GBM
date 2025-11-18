@@ -46,9 +46,6 @@ class SistemaContableApp:
         self.crear_tab_pedidos()
         self.crear_tab_retenciones()
 
-
-
-
     # -------------------------
     # TAB: Registrar Facturas
     # -------------------------
@@ -212,6 +209,7 @@ class SistemaContableApp:
         self.entry_codigo_pedido.delete(0, tk.END)
 
         messagebox.showinfo("Listo", "Producto agregado correctamente.")
+    
     # -------------------------
     # TAB: Análisis
     # -------------------------
@@ -273,6 +271,15 @@ class SistemaContableApp:
         frame_retenciones = ttk.Frame(self.notebook)
         self.notebook.add(frame_retenciones, text="Retenciones")
         
+        ttk.Label(frame_retenciones, text="Filtrar por Mes:").grid(row=0, column=0, padx=10, pady=10)
+        self.mes = ttk.Combobox(frame_retenciones, state="readonly",
+        values=["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])#.grid(row=0, column=1, padx=0, pady=10)
+        self.mes.grid(row=0, column=1, padx=10, pady=10)
+        self.mes.bind("<<ComboboxSelected>>", self.filtrar_por_mes)
+        self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
+        
+
+
         columns = ("id", "proveedor", "subtotal", "retencion", "total")
         self.retenciones_table = ttk.Treeview(frame_retenciones, columns=columns, show="headings")
         self.retenciones_table.heading("id", text="ID")
@@ -280,27 +287,20 @@ class SistemaContableApp:
         self.retenciones_table.heading("subtotal", text="Subtotal")
         self.retenciones_table.heading("retencion", text="Retención")
         self.retenciones_table.heading("total", text="Total")
-        self.retenciones_table.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
+        self.retenciones_table.grid(row=1, column=0, columnspan=4, padx=10, pady=10)
 
         frame_botones = ttk.Frame(frame_retenciones)
         frame_botones.grid(row=4, column=0, columnspan=4, pady=10)
-        ttk.Button(frame_retenciones, text="Calcular Retenciones", command=self.calcular_ret).grid(row=1, column=0, padx=10, sticky='w', pady=0)
-        facturas = self.cargar_facturas()
-        for f in facturas:
-            self.retenciones_table.insert("", "end", values=f)
+        ttk.Button(frame_retenciones, text="Calcular Retenciones", command=self.calcular_ret).grid(row=4, column=0, padx=10, sticky='w', pady=0)
+
 
         frame_label_retenciones = ttk.Frame(frame_retenciones)
-        frame_label_retenciones.grid(row=5, column=0, columnspan=4, pady=10)
-        ttk.Label(frame_retenciones, text="Retención total").grid(row=2, column=0, padx=10, sticky='w', pady=0)
+        frame_label_retenciones.grid(row=4, column=1, columnspan=4, pady=10)
+        ttk.Label(frame_retenciones, text="Retención total").grid(row=5, column=0, padx=10, sticky='w', pady=0)
 
         self.lbl_resultado = ttk.Label(frame_retenciones, text="0",  background="#e0e0e0", foreground="#000000")
-        self.lbl_resultado.grid(row=4, column=0, padx=10, pady=0, sticky='w')
-
-
-
-        
-
-
+        self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
+   
     def cargar_facturas(self):
         # Selecciona las columnas en el mismo orden que las columnas de la Treeview 'productos_table'
         self.cursor.execute("""
@@ -315,8 +315,28 @@ class SistemaContableApp:
     
     def calcular_ret(self):
         facturas = self.cargar_facturas()
-        total_retencion = sum(f[3] for f in facturas)
-        self.lbl_resultado.config(text=str("$ "+str(total_retencion)))
+        mes_seleccionado = self.mes_Nro # Obtener el índice del mes seleccionado (0-11) y convertir a 1-12
+        retenciones_mes = 0
+        for f in facturas:
+            fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")    
+            if fecha_factura.month == mes_seleccionado:
+                retenciones_mes += f[7]
+        self.lbl_resultado.config(text=str("$ "+str(retenciones_mes)))
+    
+    def filtrar_por_mes(self, event):
+        mes_seleccionado = event.widget.current() + 1  # Obtener el índice del mes seleccionado (0-11) y convertir a 1-12
+
+        # Limpiar la tabla antes de agregar los nuevos datos
+        for item in self.retenciones_table.get_children():
+            self.retenciones_table.delete(item)
+
+        facturas = self.cargar_facturas()
+        for f in facturas:
+            fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")
+            if fecha_factura.month == mes_seleccionado:
+                filas = (f[13], f[0], f[11], f[7], f[12])  # id, proveedor, subtotal, retencion, total
+                self.retenciones_table.insert("", "end", values=filas)
+        self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
 
 
 
