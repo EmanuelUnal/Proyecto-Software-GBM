@@ -383,13 +383,17 @@ class SistemaContableApp:
     # -------------------------
     def crear_tab_analisis(self):
         def proveedores():
-            producto_pro = self.entrada_pro.get()
+            producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
                 messagebox.showwarning("Producto vacío", "Debe indicar el producto por evaluar.")
                 return
-            (a,b,c) = analisis.recomendacion()
+            (a,b,c) = analisis.recomendacion(producto_pro)
             if (a,b,c) == (0,0,0):
-                messagebox.showwarning("Producto no registrado", "El producto que se ha intentado analizar no tiene registros")
+                messagebox.showerror("Producto no registrado", "El producto que se ha intentado analizar no tiene registros")
+                return
+            if (a,b,c) == (-1,-1,-1):
+                messagebox.showwarning("Sin pedidos recientes", "Los pedidos al producto indicado son demasiado antiguos para ser analizados")
+                return
             
             r1.config(text=a)
             r2.config(text=b)
