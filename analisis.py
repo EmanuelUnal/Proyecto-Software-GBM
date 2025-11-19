@@ -73,6 +73,8 @@ def recomendacion(producto: str):
                 precios[fila[1]] = fecha_reciente(prov_bar[fila[1]], (fila[1], fila[6], fila[2]))
             else:
                 precios[fila[1]] = (fila[1], fila[6], fila[2])
+    if len(llamados) < 1 or len(prov_bar) < 1 or len(precios) < 1:
+        return(-1,-1,-1)
 
     for fila in filas:
         if hace_tres_meses(fila[2]):
@@ -102,7 +104,7 @@ def recomendacion(producto: str):
         "*La empresa con menos aumento\nde precios es:\n{} con ${}".format(menos_creciente[0], menos_creciente[1]))
 
 
-(a,b,c) = recomendacion()
-print(a)
-print(b)
-print(c)
+#(a,b,c) = recomendacion()
+#print(a)
+#print(b)
+#print(c)
