@@ -44,14 +44,17 @@ def diferencial(V1: tuple, V2:tuple):
     return (V1[0], recien - lejos)
 
 
-def recomendacion():
+def recomendacion(producto: str):
     tabla = Path(__file__).with_name("contabilidad_lechera.db")
 
     conexion = sqlite3.connect(tabla)
     cursor = conexion.cursor()
 
-    cursor.execute("SELECT * FROM facturas")
+    cursor.execute("SELECT * FROM facturas WHERE producto = ?", (producto,))
     filas = cursor.fetchall()
+    if not filas:
+        return(0,0,0)
+    conexion.close()
     llamados = {}
     prov_bar = {}
     precios = {}
@@ -93,8 +96,6 @@ def recomendacion():
         dif = diferencial(precios[empresa], precios_viejos[empresa])
         if menos_creciente[1] == "None" or dif[1] < menos_creciente[1]:
             menos_creciente = dif
-    
-    conexion.close()
 
     return ("*La empresa más económica es:\n{} con ${}".format(mas_barata[0], mas_barata[1]),
         "*La empresa más confiable es:\n{} con {} llamados".format(mas_llamada[0], mas_llamada[1]),
