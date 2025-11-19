@@ -10,7 +10,7 @@ DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
 class LoginApp:
     def __init__(self, root):
         self.root = root
-<<<<<<< Updated upstream
+#<<<<<<< Updated upstream
         self.root.title("V.A.C.A - Login / Registro")
         try:
             root.iconbitmap("logo.ico")
@@ -19,12 +19,12 @@ class LoginApp:
         self.root.geometry("1100x720")
 
         # Conexión a BD (facturas / usuarios)
-=======
+#=======
         self.root.title("Sistema Contable - Empresa Lechera")
         self.root.geometry("1200x800")
         
         DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
->>>>>>> Stashed changes
+#>>>>>>> Stashed changes
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
         self._ensure_tables()
@@ -464,7 +464,7 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
-<<<<<<< Updated upstream
+#<<<<<<< Updated upstream
         def proveedores():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -481,24 +481,23 @@ class SistemaContableApp:
             r1.config(text=a)
             r2.config(text=b)
             r3.config(text=c)
-
-=======
->>>>>>> Stashed changes
+#3=======
+#>>>>>>> Stashed changes
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
-<<<<<<< Updated upstream
+#<<<<<<< Updated upstream
         ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
         self.entrada_pro = ttk.Entry(fb)
         self.entrada_pro.grid(row=2, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
-=======
+#=======
         ttk.Label(fb, text="Empresas:").grid(row=1, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
->>>>>>> Stashed changes
+#>>>>>>> Stashed changes
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
         ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
@@ -511,7 +510,7 @@ class SistemaContableApp:
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
-<<<<<<< Updated upstream
+#<<<<<<< Updated upstream
         r1 = ttk.Label(fb, text="R1,1")
         r2 = ttk.Label(fb, text="R2,1")
         r3 = ttk.Label(fb, text="R3,1")
@@ -531,7 +530,7 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
-=======
+#=======
         r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
         r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
         r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
@@ -551,26 +550,47 @@ class SistemaContableApp:
     # -------------------------
     # TAB: Gastos del Mes
     # -------------------------
->>>>>>> Stashed changes
+#>>>>>>> Stashed changes
     def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
 
         ttk.Label(frame, text="Consulta rápida de gastos mensuales").grid(row=0, column=0, padx=10, pady=20, sticky="w")
 
-        frame.grid_rowconfigure(1, weight=1)
+        filter_box = ttk.LabelFrame(frame, text="Filtros", padding=6)
+        filter_box.grid(row=1, column=0, sticky="ew", padx=10, pady=(0,8))
+        filter_box.grid_columnconfigure(6, weight=1)
+
+        ttk.Label(filter_box, text="Proveedor:").grid(row=0, column=0, padx=6, pady=4, sticky="e")
+        self.filter_proveedor = ttk.Entry(filter_box, width=20)
+        self.filter_proveedor.grid(row=0, column=1, padx=6, pady=4, sticky="w")
+
+        ttk.Label(filter_box, text="Producto:").grid(row=0, column=2, padx=6, pady=4, sticky="e")
+        self.filter_producto = ttk.Entry(filter_box, width=20)
+        self.filter_producto.grid(row=0, column=3, padx=6, pady=4, sticky="w")
+
+        ttk.Label(filter_box, text="Desde (YYYY-MM-DD):").grid(row=0, column=4, padx=6, pady=4, sticky="e")
+        self.filter_fecha_desde = ttk.Entry(filter_box, width=14)
+        self.filter_fecha_desde.grid(row=0, column=5, padx=6, pady=4, sticky="w")
+
+        ttk.Label(filter_box, text="Hasta (YYYY-MM-DD):").grid(row=0, column=6, padx=12, pady=4, sticky="e")
+        self.filter_fecha_hasta = ttk.Entry(filter_box, width=14)
+        self.filter_fecha_hasta.grid(row=0, column=7, padx=6, pady=4, sticky="w")
+
+        ttk.Button(filter_box, text="Aplicar filtro", command=self.filtrar_gastos).grid(row=1, column=0, padx=6, pady=4, sticky="e")
+        ttk.Button(filter_box, text="Limpiar filtro", command=self.limpiar_filtro).grid(row=1, column=1, padx=(0,6), pady=4, sticky="w")
+
+        frame.grid_rowconfigure(2, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
         table_box = ttk.LabelFrame(frame, text="Productos en la Factura", padding=6)
-        table_box.grid(row=1, column=0, sticky="nsew", padx=10, pady=6)
+        table_box.grid(row=2, column=0, sticky="nsew", padx=10, pady=6)
 
-        frame.grid_rowconfigure(1, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
         table_box.grid_rowconfigure(0, weight=1)
         table_box.grid_columnconfigure(0, weight=1)
 
         columns = ("proveedor", "fecha", "producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort", "codigo_factura", "codigo_pedido")
-        self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=10)
+        self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=12)
         for col, title in [("proveedor","Proveedor"),("fecha","Fecha"),("producto","Producto"),("cantidad","Cantidad"),
                            ("concepto","Concepto"),("valoru","ValorU"),("iva","Iva"),("retencion","Retencion"),
                            ("valort","ValorT"),("codigo_factura","Codigo Factura"),("codigo_pedido","Codigo Pedido")]:
@@ -589,6 +609,7 @@ class SistemaContableApp:
         vsb.grid(row=0, column=1, sticky="ns")
 
         facturas = self.cargar_facturas()
+        self._refresh_productos_table(facturas)
         for f in facturas:
             try:
                 iid = str(f[13])
@@ -711,6 +732,76 @@ class SistemaContableApp:
         win.destroy()
         messagebox.showinfo("Listo", "Factura actualizada correctamente.")
 
+    def _refresh_productos_table(self, facturas):
+        """Llena la Treeview productos_table con la lista de facturas pasada."""
+        for item in self.productos_table.get_children():
+            self.productos_table.delete(item)
+        for f in facturas:
+
+            try:
+                iid = str(f[13]) if f and len(f) > 13 and f[13] is not None else ""
+            except Exception:
+                iid = ""
+            self.productos_table.insert("", "end", iid=iid, values=f[:11])
+
+    def filtrar_gastos(self):
+        """Aplica los filtros ingresados y refresca la tabla."""
+        proveedor_f = self.filter_proveedor.get().strip().lower()
+        producto_f = self.filter_producto.get().strip().lower()
+        fecha_desde_s = self.filter_fecha_desde.get().strip()
+        fecha_hasta_s = self.filter_fecha_hasta.get().strip()
+
+        fecha_desde = None
+        fecha_hasta = None
+        try:
+            if fecha_desde_s:
+                fecha_desde = datetime.strptime(fecha_desde_s, "%Y-%m-%d")
+            if fecha_hasta_s:
+                fecha_hasta = datetime.strptime(fecha_hasta_s, "%Y-%m-%d")
+        except Exception:
+            messagebox.showerror("Error", "Formato de fecha inválido. Use YYYY-MM-DD.")
+            return
+
+        if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+            messagebox.showerror("Error", "La fecha 'Desde' no puede ser posterior a 'Hasta'.")
+            return
+
+        facturas = self.cargar_facturas()
+        resultados = []
+        for f in facturas:
+
+            if not f or len(f) < 2:
+                continue
+            proveedor = (f[0] or "").lower()
+            fecha_s = f[1] or ""
+            producto = (f[2] or "").lower()
+            concepto = (f[4] or "").lower()
+
+            if proveedor_f and proveedor_f not in proveedor:
+                continue
+            if producto_f and producto_f not in producto:
+                continue
+            # filtro por rango de fechas
+            try:
+                fecha_fact = datetime.strptime(fecha_s, "%Y-%m-%d")
+            except Exception:
+                # omitir filas con fecha inválida
+                continue
+            if fecha_desde and fecha_fact < fecha_desde:
+                continue
+            if fecha_hasta and fecha_fact > fecha_hasta:
+                continue
+
+            resultados.append(f)
+        self._refresh_productos_table(resultados)
+        
+    def limpiar_filtro(self):
+        """Limpia controles de filtro y recarga todas las facturas."""
+        self.filter_proveedor.delete(0, tk.END)
+        self.filter_producto.delete(0, tk.END)
+        self.filter_mes.current(0)
+        facturas = self.cargar_facturas()
+        self._refresh_productos_table(facturas)
 
 
     # -------------------------
