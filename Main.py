@@ -267,6 +267,7 @@ class SistemaContableApp:
         if rol == "Auxiliar Contable":
             self.crear_tab_factura()
             self.crear_tab_generar_pedido()
+            self.crear_tab_retenciones()
         elif rol == "Contadora":
             self.crear_tab_analisis()
             self.crear_tab_revision_de_gastos()
