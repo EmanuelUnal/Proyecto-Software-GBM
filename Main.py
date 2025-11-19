@@ -485,7 +485,6 @@ class SistemaContableApp:
             r1.config(text=a)
             r2.config(text=b)
             r3.config(text=c)
-
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
@@ -527,25 +526,50 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
+
+    # -------------------------
+    # TAB: Revisión de Gastos Mensuales
+    # -------------------------
     def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
 
         ttk.Label(frame, text="Consulta rápida de gastos mensuales").grid(row=0, column=0, padx=10, pady=20, sticky="w")
 
-        frame.grid_rowconfigure(1, weight=1)
+        filter_box = ttk.LabelFrame(frame, text="Filtros", padding=6)
+        filter_box.grid(row=1, column=0, sticky="ew", padx=10, pady=(0,8))
+        filter_box.grid_columnconfigure(6, weight=1)
+
+        ttk.Label(filter_box, text="Proveedor:").grid(row=0, column=0, padx=6, pady=4, sticky="e")
+        self.filter_proveedor = ttk.Entry(filter_box, width=20)
+        self.filter_proveedor.grid(row=0, column=1, padx=6, pady=4, sticky="w")
+
+        ttk.Label(filter_box, text="Producto:").grid(row=0, column=2, padx=6, pady=4, sticky="e")
+        self.filter_producto = ttk.Entry(filter_box, width=20)
+        self.filter_producto.grid(row=0, column=3, padx=6, pady=4, sticky="w")
+
+        ttk.Label(filter_box, text="Desde (YYYY-MM-DD):").grid(row=0, column=4, padx=6, pady=4, sticky="e")
+        self.filter_fecha_desde = ttk.Entry(filter_box, width=14)
+        self.filter_fecha_desde.grid(row=0, column=5, padx=6, pady=4, sticky="w")
+
+        ttk.Label(filter_box, text="Hasta (YYYY-MM-DD):").grid(row=0, column=6, padx=12, pady=4, sticky="e")
+        self.filter_fecha_hasta = ttk.Entry(filter_box, width=14)
+        self.filter_fecha_hasta.grid(row=0, column=7, padx=6, pady=4, sticky="w")
+
+        ttk.Button(filter_box, text="Aplicar filtro", command=self.filtrar_gastos).grid(row=1, column=0, padx=6, pady=4, sticky="e")
+        ttk.Button(filter_box, text="Limpiar filtro", command=self.limpiar_filtro).grid(row=1, column=1, padx=(0,6), pady=4, sticky="w")
+
+        frame.grid_rowconfigure(2, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
         table_box = ttk.LabelFrame(frame, text="Productos en la Factura", padding=6)
-        table_box.grid(row=1, column=0, sticky="nsew", padx=10, pady=6)
+        table_box.grid(row=2, column=0, sticky="nsew", padx=10, pady=6)
 
-        frame.grid_rowconfigure(1, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
         table_box.grid_rowconfigure(0, weight=1)
         table_box.grid_columnconfigure(0, weight=1)
 
         columns = ("proveedor", "fecha", "producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort", "codigo_factura", "codigo_pedido")
-        self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=10)
+        self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=12)
         for col, title in [("proveedor","Proveedor"),("fecha","Fecha"),("producto","Producto"),("cantidad","Cantidad"),
                            ("concepto","Concepto"),("valoru","ValorU"),("iva","Iva"),("retencion","Retencion"),
                            ("valort","ValorT"),("codigo_factura","Codigo Factura"),("codigo_pedido","Codigo Pedido")]:
@@ -564,6 +588,7 @@ class SistemaContableApp:
         vsb.grid(row=0, column=1, sticky="ns")
 
         facturas = self.cargar_facturas()
+        self._refresh_productos_table(facturas)
         for f in facturas:
             try:
                 iid = str(f[13])
@@ -686,6 +711,76 @@ class SistemaContableApp:
         win.destroy()
         messagebox.showinfo("Listo", "Factura actualizada correctamente.")
 
+    def _refresh_productos_table(self, facturas):
+        """Llena la Treeview productos_table con la lista de facturas pasada."""
+        for item in self.productos_table.get_children():
+            self.productos_table.delete(item)
+        for f in facturas:
+
+            try:
+                iid = str(f[13]) if f and len(f) > 13 and f[13] is not None else ""
+            except Exception:
+                iid = ""
+            self.productos_table.insert("", "end", iid=iid, values=f[:11])
+
+    def filtrar_gastos(self):
+        """Aplica los filtros ingresados y refresca la tabla."""
+        proveedor_f = self.filter_proveedor.get().strip().lower()
+        producto_f = self.filter_producto.get().strip().lower()
+        fecha_desde_s = self.filter_fecha_desde.get().strip()
+        fecha_hasta_s = self.filter_fecha_hasta.get().strip()
+
+        fecha_desde = None
+        fecha_hasta = None
+        try:
+            if fecha_desde_s:
+                fecha_desde = datetime.strptime(fecha_desde_s, "%Y-%m-%d")
+            if fecha_hasta_s:
+                fecha_hasta = datetime.strptime(fecha_hasta_s, "%Y-%m-%d")
+        except Exception:
+            messagebox.showerror("Error", "Formato de fecha inválido. Use YYYY-MM-DD.")
+            return
+
+        if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+            messagebox.showerror("Error", "La fecha 'Desde' no puede ser posterior a 'Hasta'.")
+            return
+
+        facturas = self.cargar_facturas()
+        resultados = []
+        for f in facturas:
+
+            if not f or len(f) < 2:
+                continue
+            proveedor = (f[0] or "").lower()
+            fecha_s = f[1] or ""
+            producto = (f[2] or "").lower()
+            concepto = (f[4] or "").lower()
+
+            if proveedor_f and proveedor_f not in proveedor:
+                continue
+            if producto_f and producto_f not in producto:
+                continue
+            # filtro por rango de fechas
+            try:
+                fecha_fact = datetime.strptime(fecha_s, "%Y-%m-%d")
+            except Exception:
+                # omitir filas con fecha inválida
+                continue
+            if fecha_desde and fecha_fact < fecha_desde:
+                continue
+            if fecha_hasta and fecha_fact > fecha_hasta:
+                continue
+
+            resultados.append(f)
+        self._refresh_productos_table(resultados)
+        
+    def limpiar_filtro(self):
+        """Limpia controles de filtro y recarga todas las facturas."""
+        self.filter_proveedor.delete(0, tk.END)
+        self.filter_producto.delete(0, tk.END)
+        self.filter_mes.current(0)
+        facturas = self.cargar_facturas()
+        self._refresh_productos_table(facturas)
 
 
     # -------------------------
