@@ -986,7 +986,7 @@ class SistemaContableApp:
         for f in facturas:
             fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")    
             if fecha_factura.month == mes_seleccionado:
-                retenciones_mes += f[7]
+                retenciones_mes += f[8]*(f[7]/100)  # total * (retencion / 100)
         self.lbl_resultado.config(text=f"$ {retenciones_mes:.2f}")
 
     
