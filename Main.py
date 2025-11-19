@@ -383,10 +383,15 @@ class SistemaContableApp:
     # -------------------------
     def crear_tab_analisis(self):
         def proveedores():
+            producto_pro = self.entrada_pro.get()
+            if producto_pro == "":
+                messagebox.showinfo("Producto vacío", "Debe indicar el producto por evaluar.")
+                return
             (a,b,c) = analisis.recomendacion()
             r1.config(text=a)
             r2.config(text=b)
             r3.config(text=c)
+
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
@@ -394,7 +399,8 @@ class SistemaContableApp:
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
         ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
-        ttk.Entry(fb).grid(row=2, column=0, padx=10, pady=5)
+        self.entrada_pro = ttk.Entry(fb)
+        self.entrada_pro.grid(row=2, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
