@@ -14,7 +14,7 @@ class LoginApp:
             root.iconbitmap("logo.ico")
         except:
             pass
-        self.root.geometry("480x320")
+        self.root.geometry("1100x720")
 
         # Conexión a BD
         self.con = sqlite3.connect(DB_PATH)
@@ -445,6 +445,7 @@ class SistemaContableApp:
 
         codigo_pedido = "PED-" + datetime.now().strftime("%Y%m%d%H%M%S")
 
+        # Insertar cada producto del pedido al registro
         for item in productos:
             producto, cantidad = self.pedido_table.item(item, "values")
             self.tabla_registro_pedidos.insert("", "end", values=(codigo_pedido, producto, cantidad))
@@ -452,6 +453,7 @@ class SistemaContableApp:
         messagebox.showinfo("Pedido Registrado",
                             f"Pedido guardado correctamente.\nCódigo generado: {codigo_pedido}")
 
+        # Limpiar la tabla de productos para un nuevo pedido
         for item in productos:
             self.pedido_table.delete(item)
 
@@ -459,6 +461,7 @@ class SistemaContableApp:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Generar Pedido")
 
+        # --- Datos generales del pedido ---
         ttk.Label(frame, text="Proveedor:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
         self.entry_proveedor_pedido = ttk.Entry(frame, width=30)
         self.entry_proveedor_pedido.grid(row=0, column=1, padx=10, pady=5)
@@ -467,6 +470,7 @@ class SistemaContableApp:
         self.entry_fecha_pedido = ttk.Entry(frame, width=20)
         self.entry_fecha_pedido.grid(row=1, column=1, padx=10, pady=5)
 
+        # --- Productos ---
         ttk.Label(frame, text="Producto:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.entry_producto_pedido = ttk.Entry(frame)
         self.entry_producto_pedido.grid(row=2, column=1, padx=10, pady=5)
@@ -483,15 +487,18 @@ class SistemaContableApp:
         ttk.Button(frame, text="Agregar Producto",
                 command=self.agregar_producto_tabla).grid(row=5, column=1, pady=10)
 
+        # --- Tabla de productos agregados (izquierda) ---
         columnas = ("producto", "cantidad")
         self.pedido_table = ttk.Treeview(frame, columns=columnas, show="headings", height=8)
         self.pedido_table.heading("producto", text="Producto")
         self.pedido_table.heading("cantidad", text="Cantidad")
         self.pedido_table.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
 
+        # Botón registrar pedido
         ttk.Button(frame, text="Registrar Pedido",
                 command=self.registrar_pedido).grid(row=7, column=0, columnspan=2, pady=15)
 
+        # --- Tabla registro de pedidos (DERECHA) ---
         ttk.Label(frame, text="Registro de Pedidos").grid(row=0, column=3, padx=10, pady=10)
 
         columnas_registro = ("codigo", "producto", "cantidad")
@@ -536,11 +543,15 @@ class SistemaContableApp:
         self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
    
     def cargar_facturas(self):
+        # Selecciona las columnas en el mismo orden que las columnas de la Treeview 'productos_table'
         self.cursor.execute("""
             SELECT proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido, subtotal, total, id
             FROM facturas
         """)
         rows = self.cursor.fetchall()
+        # Para la tabla de productos usamos sólo las primeras 11 columnas (las que mostró el Treeview)
+        # retornamos también valores auxiliares para otras vistas cuando sea necesario
+        # orden de retorno: (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido, subtotal, total, id)
         return rows
     
     def calcular_ret(self):
