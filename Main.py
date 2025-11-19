@@ -12,7 +12,9 @@ class LoginApp:
         self.root = root
         self.root.title("V.A.C.A - Login / Registro")
         try:
-            root.iconbitmap("logo.ico")
+            icon_path = Path(__file__).with_name("logo.ico")
+            if icon_path.exists():
+                root.iconbitmap(str(icon_path))
         except:
             pass
         self.root.geometry("1100x720")
@@ -114,6 +116,12 @@ class LoginApp:
     # ---------------- LOGIN ----------------
     def build_login_frame(self):
         frm = self.frame_login
+        try:
+            icon_path = Path(__file__).with_name("logo.ico")
+            if icon_path.exists():
+                self.root.iconbitmap(str(icon_path))
+        except Exception:
+            pass
         for w in frm.winfo_children():
             w.destroy()
 
@@ -138,6 +146,7 @@ class LoginApp:
         ttk.Button(btn_frame, text="Salir", command=self.root.quit).grid(row=0, column=2, padx=8)
 
         ttk.Label(frm, text="Registra usuarios como Contadora o Auxiliar Contable", foreground="#333").pack(pady=(8,0))
+        
 
     def show_login(self):
         self.frame_register.pack_forget()
@@ -244,7 +253,9 @@ class SistemaContableApp:
         self.usuario = usuario
         self.root.title(f"V.A.C.A")
         try:
-            root.iconbitmap("logo.ico")
+            icon_path = Path(__file__).with_name("logo.ico")
+            if icon_path.exists():
+                root.iconbitmap(str(icon_path))
         except:
             pass
         self.root.geometry("1100x720")
