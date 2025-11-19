@@ -10,21 +10,15 @@ DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
 class LoginApp:
     def __init__(self, root):
         self.root = root
-<<<<<<< Updated upstream
         self.root.title("V.A.C.A - Login / Registro")
         try:
             root.iconbitmap("logo.ico")
         except:
             pass
         self.root.geometry("1100x720")
+        DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
 
         # Conexión a BD (facturas / usuarios)
-=======
-        self.root.title("Sistema Contable - Empresa Lechera")
-        self.root.geometry("1200x800")
-        
-        DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
->>>>>>> Stashed changes
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
         self._ensure_tables()
@@ -464,7 +458,6 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
-<<<<<<< Updated upstream
         def proveedores():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -482,23 +475,16 @@ class SistemaContableApp:
             r2.config(text=b)
             r3.config(text=c)
 
-=======
->>>>>>> Stashed changes
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
-<<<<<<< Updated upstream
         ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
         self.entrada_pro = ttk.Entry(fb)
         self.entrada_pro.grid(row=2, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
-=======
-        ttk.Label(fb, text="Empresas:").grid(row=1, column=0, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
->>>>>>> Stashed changes
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
         ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
@@ -511,7 +497,6 @@ class SistemaContableApp:
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
-<<<<<<< Updated upstream
         r1 = ttk.Label(fb, text="R1,1")
         r2 = ttk.Label(fb, text="R2,1")
         r3 = ttk.Label(fb, text="R3,1")
@@ -531,27 +516,6 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
-=======
-        r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
-        r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
-        r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
-        r4 = ttk.Label(fb, text="R1,2").grid(row=10, column=1, padx=10, pady=5)
-        r5 = ttk.Label(fb, text="R2,2").grid(row=11, column=1, padx=10, pady=5)
-        r6 = ttk.Label(fb, text="R3,2").grid(row=12, column=1, padx=10, pady=5)
-        r7 = ttk.Label(fb, text="R1,3").grid(row=10, column=2, padx=10, pady=5)
-        r8 = ttk.Label(fb, text="R2,3").grid(row=11, column=2, padx=10, pady=5)
-        r9 = ttk.Label(fb, text="R3,3").grid(row=12, column=2, padx=10, pady=5)
-        
-        
-        #self.tipo_producto = ttk.Entry(fb, text = "General")
-        #self.tipo_producto.grid(row=1, column=1, padx=10, pady=5)
-        #ttk.Label(fb, text="(Vacío para la información general)").grid(row=2, column=0, padx=10, pady=0)
-
-
-    # -------------------------
-    # TAB: Gastos del Mes
-    # -------------------------
->>>>>>> Stashed changes
     def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
