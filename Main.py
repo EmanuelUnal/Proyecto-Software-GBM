@@ -1,5 +1,6 @@
 import sqlite3
 import tkinter as tk
+import analisis
 from tkinter import ttk, messagebox
 from pathlib import Path
 from datetime import datetime
@@ -381,6 +382,11 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+        def proveedores():
+            (a,b,c) = analisis.recomendacion()
+            r1.config(text=a)
+            r2.config(text=b)
+            r3.config(text=c)
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
@@ -389,7 +395,7 @@ class SistemaContableApp:
 
         ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
         ttk.Entry(fb).grid(row=2, column=0, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
         ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
@@ -402,16 +408,25 @@ class SistemaContableApp:
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
-        r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
-        r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
-        r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
-        r4 = ttk.Label(fb, text="R1,2").grid(row=10, column=1, padx=10, pady=5)
-        r5 = ttk.Label(fb, text="R2,2").grid(row=11, column=1, padx=10, pady=5)
-        r6 = ttk.Label(fb, text="R3,2").grid(row=12, column=1, padx=10, pady=5)
-        r7 = ttk.Label(fb, text="R1,3").grid(row=10, column=2, padx=10, pady=5)
-        r8 = ttk.Label(fb, text="R2,3").grid(row=11, column=2, padx=10, pady=5)
-        r9 = ttk.Label(fb, text="R3,3").grid(row=12, column=2, padx=10, pady=5)
-        
+        r1 = ttk.Label(fb, text="R1,1")
+        r2 = ttk.Label(fb, text="R2,1")
+        r3 = ttk.Label(fb, text="R3,1")
+        r4 = ttk.Label(fb, text="R1,2")
+        r5 = ttk.Label(fb, text="R2,2")
+        r6 = ttk.Label(fb, text="R3,2")
+        r7 = ttk.Label(fb, text="R1,3")
+        r8 = ttk.Label(fb, text="R2,3")
+        r9 = ttk.Label(fb, text="R3,3")
+
+        r1.grid(row=10, column=0, padx=10, pady=5)
+        r2.grid(row=11, column=0, padx=10, pady=5)
+        r3.grid(row=12, column=0, padx=10, pady=5)
+        r4.grid(row=10, column=1, padx=10, pady=5)
+        r5.grid(row=11, column=1, padx=10, pady=5)
+        r6.grid(row=12, column=1, padx=10, pady=5)
+        r7.grid(row=10, column=2, padx=10, pady=5)
+        r8.grid(row=11, column=2, padx=10, pady=5)
+        r9.grid(row=12, column=2, padx=10, pady=5)
     def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
