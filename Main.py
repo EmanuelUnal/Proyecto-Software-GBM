@@ -933,12 +933,14 @@ class SistemaContableApp:
 
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
+        frame_retenciones.grid_rowconfigure(1, weight=1)
+        frame_retenciones.grid_columnconfigure(0, weight=1)
         self.notebook.add(frame_retenciones, text="Retenciones")
         
-        ttk.Label(frame_retenciones, text="Filtrar por Mes:").grid(row=0, column=0, padx=10, pady=10)
+        ttk.Label(frame_retenciones, text="Filtrar por Mes:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
         self.mes = ttk.Combobox(frame_retenciones, state="readonly",
-        values=["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])#.grid(row=0, column=1, padx=0, pady=10)
-        self.mes.grid(row=0, column=1, padx=10, pady=10)
+        values=["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])
+        self.mes.grid(row=0, column=0, padx=100, pady=10, sticky="w")
         self.mes.bind("<<ComboboxSelected>>", self.filtrar_por_mes)
         self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
         
@@ -951,7 +953,7 @@ class SistemaContableApp:
         self.retenciones_table.heading("subtotal", text="Subtotal")
         self.retenciones_table.heading("retencion", text="Retención")
         self.retenciones_table.heading("total", text="Total")
-        self.retenciones_table.grid(row=1, column=0, columnspan=4, padx=10, pady=10)
+        self.retenciones_table.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
 
         frame_botones = ttk.Frame(frame_retenciones)
         frame_botones.grid(row=4, column=0, columnspan=4, pady=10)
@@ -962,7 +964,7 @@ class SistemaContableApp:
         frame_label_retenciones.grid(row=4, column=1, columnspan=4, pady=10)
         ttk.Label(frame_retenciones, text="Retención total").grid(row=5, column=0, padx=10, sticky='w', pady=0)
 
-        self.lbl_resultado = ttk.Label(frame_retenciones, text="0",  background="#e0e0e0", foreground="#000000")
+        self.lbl_resultado = ttk.Label(frame_retenciones, text="$ 0.00",  background="#e0e0e0", foreground="#000000")
         self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
    
     def cargar_facturas(self):
@@ -985,7 +987,8 @@ class SistemaContableApp:
             fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")    
             if fecha_factura.month == mes_seleccionado:
                 retenciones_mes += f[7]
-        self.lbl_resultado.config(text=str("$ "+str(retenciones_mes)))
+        self.lbl_resultado.config(text=f"$ {retenciones_mes:.2f}")
+
     
     def filtrar_por_mes(self, event):
         mes_seleccionado = event.widget.current() + 1  # Obtener el índice del mes seleccionado (0-11) y convertir a 1-12
@@ -1001,6 +1004,8 @@ class SistemaContableApp:
                 filas = (f[13], f[0], f[11], f[7], f[12])  # id, proveedor, subtotal, retencion, total
                 self.retenciones_table.insert("", "end", values=filas)
         self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
+        self.lbl_resultado.config(text="$ 0.00")
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
