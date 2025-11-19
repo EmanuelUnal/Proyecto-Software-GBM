@@ -488,8 +488,11 @@ class SistemaContableApp:
             r3.config(text=c)
         def general():
             (a,b,c) = analisis.general()
-            if (a,b,c) == (-1,-1-1):
+            if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning
+            r4.config(text=a)
+            r5.config(text=b)
+            r6.config(text=c)
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
@@ -502,7 +505,7 @@ class SistemaContableApp:
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar", command=general).grid(row=3, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Producto:\n(Ingresar producto a evaluar)").grid(row=1, column=2, padx=10, pady=5)
         ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
@@ -512,12 +515,12 @@ class SistemaContableApp:
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
-        r1 = ttk.Label(fb, text="R1,1")
-        r2 = ttk.Label(fb, text="R2,1")
-        r3 = ttk.Label(fb, text="R3,1")
-        r4 = ttk.Label(fb, text="R1,2")
-        r5 = ttk.Label(fb, text="R2,2")
-        r6 = ttk.Label(fb, text="R3,2")
+        r1 = ttk.Label(fb, text="Proveedor más barato")
+        r2 = ttk.Label(fb, text="Proveedor más confiable")
+        r3 = ttk.Label(fb, text="Proveedor con menor\naumento de precios")
+        r4 = ttk.Label(fb, text="Promedio de gastos en\nlos últimos tres meses")
+        r5 = ttk.Label(fb, text="Producto de mayor inversión")
+        r6 = ttk.Label(fb, text="Aumento del gasto en\ntres meses")
         r7 = ttk.Label(fb, text="R1,3")
         r8 = ttk.Label(fb, text="R2,3")
         r9 = ttk.Label(fb, text="R3,3")
