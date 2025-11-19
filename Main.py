@@ -778,7 +778,11 @@ class SistemaContableApp:
         """Limpia controles de filtro y recarga todas las facturas."""
         self.filter_proveedor.delete(0, tk.END)
         self.filter_producto.delete(0, tk.END)
-        self.filter_mes.current(0)
+        try:
+            self.filter_fecha_desde.delete(0, tk.END)
+            self.filter_fecha_hasta.delete(0, tk.END)
+        except Exception:
+            pass
         facturas = self.cargar_facturas()
         self._refresh_productos_table(facturas)
 

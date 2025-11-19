@@ -89,7 +89,7 @@ def main():
     cur.execute("SELECT COUNT(1) FROM facturas")
     existing = cur.fetchone()[0]
 
-    target = 50
+    target = 100
     to_add = target - existing
     if to_add <= 0:
         print(f"Ya hay {existing} registros en {DB_PATH}. No se añadirán filas.")
@@ -97,7 +97,7 @@ def main():
         return
 
     # start date fijo determinista
-    start_date = date(2024, 1, 1)
+    start_date = date(2025, 9, 20)
 
     rows = []
     for i in range(existing, existing + to_add):
