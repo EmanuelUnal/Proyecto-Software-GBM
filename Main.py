@@ -556,7 +556,7 @@ class SistemaContableApp:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
 
-        ttk.Label(frame, text="Consulta rápida de gastos mensuales (Placeholder)").grid(row=0, column=0, padx=10, pady=20, sticky="w")
+        ttk.Label(frame, text="Consulta rápida de gastos mensuales").grid(row=0, column=0, padx=10, pady=20, sticky="w")
 
         frame.grid_rowconfigure(1, weight=1)
         frame.grid_columnconfigure(0, weight=1)
