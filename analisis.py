@@ -138,7 +138,7 @@ def general():
     dif = sum(en_tres.values()) - sum(en_uno.values())
     promedio /= 3
     return ("*En los últimos tres meses\nse gastó en promedio un total de\n${}".format(dif),
-            "*En los últimos tres meses el\nproducto en el que más se ha\ninvertido es {} con un\ntotal de ${}".format(mayor[0], mayor[1]),
+            "*En los últimos tres meses el\nproducto en el que más se ha\ninvertido, con un total de ${}\nes {}".format(mayor[1], mayor[0]),
             "El aumento de gasto en los últimos\ntres meses ha sido de ${}".format(dif))
 
 
