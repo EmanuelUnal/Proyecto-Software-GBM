@@ -10,6 +10,7 @@ DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
 class LoginApp:
     def __init__(self, root):
         self.root = root
+<<<<<<< Updated upstream
         self.root.title("V.A.C.A - Login / Registro")
         try:
             root.iconbitmap("logo.ico")
@@ -18,6 +19,12 @@ class LoginApp:
         self.root.geometry("1100x720")
 
         # Conexión a BD (facturas / usuarios)
+=======
+        self.root.title("Sistema Contable - Empresa Lechera")
+        self.root.geometry("1200x800")
+        
+        DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
+>>>>>>> Stashed changes
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
         self._ensure_tables()
@@ -457,6 +464,7 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+<<<<<<< Updated upstream
         def proveedores():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -474,16 +482,23 @@ class SistemaContableApp:
             r2.config(text=b)
             r3.config(text=c)
 
+=======
+>>>>>>> Stashed changes
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
 
+<<<<<<< Updated upstream
         ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
         self.entrada_pro = ttk.Entry(fb)
         self.entrada_pro.grid(row=2, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
+=======
+        ttk.Label(fb, text="Empresas:").grid(row=1, column=0, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar").grid(row=3, column=0, padx=10, pady=5)
+>>>>>>> Stashed changes
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
         ttk.Button(fb, text="Evaluar").grid(row=3, column=1, padx=10, pady=5)
@@ -496,6 +511,7 @@ class SistemaContableApp:
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
         
+<<<<<<< Updated upstream
         r1 = ttk.Label(fb, text="R1,1")
         r2 = ttk.Label(fb, text="R2,1")
         r3 = ttk.Label(fb, text="R3,1")
@@ -515,11 +531,187 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
+=======
+        r1 = ttk.Label(fb, text="R1,1").grid(row=10, column=0, padx=10, pady=5)
+        r2 = ttk.Label(fb, text="R2,1").grid(row=11, column=0, padx=10, pady=5)
+        r3 = ttk.Label(fb, text="R3,1").grid(row=12, column=0, padx=10, pady=5)
+        r4 = ttk.Label(fb, text="R1,2").grid(row=10, column=1, padx=10, pady=5)
+        r5 = ttk.Label(fb, text="R2,2").grid(row=11, column=1, padx=10, pady=5)
+        r6 = ttk.Label(fb, text="R3,2").grid(row=12, column=1, padx=10, pady=5)
+        r7 = ttk.Label(fb, text="R1,3").grid(row=10, column=2, padx=10, pady=5)
+        r8 = ttk.Label(fb, text="R2,3").grid(row=11, column=2, padx=10, pady=5)
+        r9 = ttk.Label(fb, text="R3,3").grid(row=12, column=2, padx=10, pady=5)
+        
+        
+        #self.tipo_producto = ttk.Entry(fb, text = "General")
+        #self.tipo_producto.grid(row=1, column=1, padx=10, pady=5)
+        #ttk.Label(fb, text="(Vacío para la información general)").grid(row=2, column=0, padx=10, pady=0)
+
+
+    # -------------------------
+    # TAB: Gastos del Mes
+    # -------------------------
+>>>>>>> Stashed changes
     def crear_tab_revision_de_gastos(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Revisión de Gastos Mensuales")
 
-        ttk.Label(frame, text="Consulta rápida de gastos mensuales (Placeholder)").pack(pady=20)
+        ttk.Label(frame, text="Consulta rápida de gastos mensuales (Placeholder)").grid(row=0, column=0, padx=10, pady=20, sticky="w")
+
+        frame.grid_rowconfigure(1, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+
+        table_box = ttk.LabelFrame(frame, text="Productos en la Factura", padding=6)
+        table_box.grid(row=1, column=0, sticky="nsew", padx=10, pady=6)
+
+        frame.grid_rowconfigure(1, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+        table_box.grid_rowconfigure(0, weight=1)
+        table_box.grid_columnconfigure(0, weight=1)
+
+        columns = ("proveedor", "fecha", "producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort", "codigo_factura", "codigo_pedido")
+        self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=10)
+        for col, title in [("proveedor","Proveedor"),("fecha","Fecha"),("producto","Producto"),("cantidad","Cantidad"),
+                           ("concepto","Concepto"),("valoru","ValorU"),("iva","Iva"),("retencion","Retencion"),
+                           ("valort","ValorT"),("codigo_factura","Codigo Factura"),("codigo_pedido","Codigo Pedido")]:
+            self.productos_table.heading(col, text=title)
+
+        self.productos_table.column("proveedor", width=150, anchor="w")
+        self.productos_table.column("fecha", width=110, anchor="center")
+        self.productos_table.column("producto", width=180, anchor="w")
+        self.productos_table.column("cantidad", width=80, anchor="center")
+
+        self.productos_table.bind("<Double-1>", self._on_edit_product)
+
+        self.productos_table.grid(row=0, column=0, sticky="nsew")
+        vsb = ttk.Scrollbar(table_box, orient="vertical", command=self.productos_table.yview)
+        self.productos_table.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+
+        facturas = self.cargar_facturas()
+        for f in facturas:
+            try:
+                iid = str(f[13])
+            except Exception:
+                iid = None
+            self.productos_table.insert("", "end", iid=iid, values=f[:11])
+
+    def _on_edit_product(self, event):
+        """Handler para doble click: abre ventana de edición para la fila cliqueada."""
+        item = self.productos_table.identify_row(event.y)
+        if not item:
+            return
+        try:
+            factura_id = int(item)
+        except Exception:
+            vals = self.productos_table.item(item, "values")
+            if not vals:
+                return
+            codigo_fact = vals[9] if len(vals) > 9 else None
+            if not codigo_fact:
+                messagebox.showerror("Editar", "No se puede identificar el registro en la base de datos.")
+                return
+            self.cursor.execute("SELECT id FROM facturas WHERE codigo_factura = ? LIMIT 1", (codigo_fact,))
+            r = self.cursor.fetchone()
+            if not r:
+                messagebox.showerror("Editar", "Registro no encontrado en la base de datos.")
+                return
+            factura_id = r[0]
+        self._open_edit_window(factura_id)
+
+    def _open_edit_window(self, factura_id):
+        """Abre Toplevel con campos para editar la factura identificada por factura_id."""
+        self.cursor.execute("SELECT proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido FROM facturas WHERE id = ?", (factura_id,))
+        row = self.cursor.fetchone()
+        if not row:
+            messagebox.showerror("Editar", "No se encontró la factura en la base de datos.")
+            return
+
+        win = tk.Toplevel(self.root)
+        win.title(f"Editar factura #{factura_id}")
+        win.transient(self.root)
+        win.grab_set()
+
+        labels = ["Proveedor", "Fecha (YYYY-MM-DD)", "Producto", "Cantidad", "Concepto", "ValorU", "Iva (%)", "Retención", "ValorT", "Codigo Factura", "Codigo Pedido"]
+        entries = {}
+        for i, label in enumerate(labels):
+            ttk.Label(win, text=label).grid(row=i, column=0, padx=8, pady=4, sticky="e")
+            ent = ttk.Entry(win, width=30)
+            ent.grid(row=i, column=1, padx=8, pady=4, sticky="w")
+            ent.insert(0, "" if row[i] is None else str(row[i]))
+            entries[label] = ent
+
+
+        def _on_save():
+            self._save_edited_product(factura_id, entries, win)
+
+        ttk.Button(win, text="Guardar cambios", command=_on_save).grid(row=len(labels), column=0, padx=8, pady=8)
+        ttk.Button(win, text="Cancelar", command=win.destroy).grid(row=len(labels), column=1, padx=8, pady=8, sticky="w")
+
+    def _save_edited_product(self, factura_id, entries, win):
+        """Valida, actualiza BD y actualiza fila del Treeview."""
+        proveedor = entries["Proveedor"].get().strip()
+        fecha = entries["Fecha (YYYY-MM-DD)"].get().strip()
+        producto = entries["Producto"].get().strip()
+        cantidad_s = entries["Cantidad"].get().strip()
+        concepto = entries["Concepto"].get().strip()
+        valoru_s = entries["ValorU"].get().strip()
+        iva_s = entries["Iva (%)"].get().strip()
+        retencion_s = entries["Retención"].get().strip()
+        codigo_fact = entries["Codigo Factura"].get().strip()
+        codigo_ped = entries["Codigo Pedido"].get().strip()
+
+        if not all([proveedor, fecha, producto, cantidad_s, concepto, valoru_s, iva_s, retencion_s, codigo_fact, codigo_ped]):
+            messagebox.showerror("Error", "Debe completar todas las casillas.")
+            return
+        try:
+            datetime.strptime(fecha, "%Y-%m-%d")
+        except Exception:
+            messagebox.showerror("Error", "Fecha inválida. Use formato YYYY-MM-DD.")
+            return
+        try:
+            cantidad = int(cantidad_s)
+            valoru = float(valoru_s)
+            iva = float(iva_s)
+            retencion = float(retencion_s)
+        except Exception:
+            messagebox.showerror("Error", "Cantidad debe ser entero. ValorU, Iva y Retención numéricos.")
+            return
+        if cantidad < 0 or valoru < 0:
+            messagebox.showerror("Error", "Cantidad y ValorU deben ser >= 0.")
+            return
+
+        subtotal = cantidad * valoru
+        valort = subtotal * (1 + iva / 100.0) - retencion
+        total = valort
+
+        try:
+            self.cursor.execute("""
+                UPDATE facturas
+                SET proveedor=?, fecha=?, producto=?, cantidad=?, concepto=?, valoru=?, iva=?, retencion=?, valort=?, codigo_factura=?, codigo_pedido=?, subtotal=?, total=?
+                WHERE id=?
+            """, (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_fact, codigo_ped, subtotal, total, factura_id))
+            self.con.commit()
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudo actualizar la base de datos:\n{e}")
+            return
+
+        iid = str(factura_id)
+        if iid in self.productos_table.get_children(''):
+            newvals = (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_fact, codigo_ped)
+            self.productos_table.item(iid, values=newvals)
+        else:
+            for item in self.productos_table.get_children(''):
+                vals = self.productos_table.item(item, "values")
+                if len(vals) > 9 and vals[9] == codigo_fact:
+                    newvals = (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_fact, codigo_ped)
+                    self.productos_table.item(item, values=newvals)
+                    break
+
+        win.destroy()
+        messagebox.showinfo("Listo", "Factura actualizada correctamente.")
+
+
 
     # -------------------------
     # TAB: Registrar Pedidos
