@@ -20,7 +20,6 @@ def hace_seis_meses(fecha_str:str):
     diferencia = fecha - timedelta(days=183)
     return fechae >= diferencia
 
-
 def fecha_reciente(f1:tuple, f2:tuple):
     fecha1 = datetime.strptime(f1[2], '%Y-%m-%d').date()
     fecha2 = datetime.strptime(f2[2], '%Y-%m-%d').date()
@@ -42,7 +41,6 @@ def diferencial(V1: tuple, V2:tuple):
     lejos = V2[1]
     recien = V1[1]
     return (V1[0], recien - lejos)
-
 
 def recomendacion(producto: str):
     tabla = Path(__file__).with_name("contabilidad_lechera.db")
@@ -102,6 +100,15 @@ def recomendacion(producto: str):
     return ("*La empresa más económica es:\n{} con ${}".format(mas_barata[0], mas_barata[1]),
         "*La empresa más confiable es:\n{} con {} llamados".format(mas_llamada[0], mas_llamada[1]),
         "*La empresa con menos aumento\nde precios es:\n{} con ${}".format(menos_creciente[0], menos_creciente[1]))
+
+def general():
+    tabla = Path(__file__).with_name("contabilidad_lechera.db")
+
+    conexion = sqlite3.connect(tabla)
+    cursor = conexion.cursor()
+
+    cursor.execute("SELECT * FROM facturas")
+    filas = cursor.fetchall()
 
 
 #(a,b,c) = recomendacion()
