@@ -479,12 +479,16 @@ class SistemaContableApp:
                 messagebox.showerror("Producto no registrado", "El producto que se ha intentado analizar no tiene registros")
                 return
             if (a,b,c) == (-1,-1,-1):
-                messagebox.showwarning("Sin pedidos recientes", "Los pedidos al producto indicado son demasiado antiguos para ser analizados")
+                messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
             
             r1.config(text=a)
             r2.config(text=b)
             r3.config(text=c)
+        def general():
+            (a,b,c) = analisis.general()
+            if (a,b,c) == (-1,-1-1):
+                messagebox.showwarning
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
