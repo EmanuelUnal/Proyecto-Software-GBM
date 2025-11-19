@@ -17,10 +17,16 @@ class LoginApp:
             pass
         self.root.geometry("1100x720")
 
-        # Conexión a BD
+        # Conexión a BD (facturas / usuarios)
         self.con = sqlite3.connect(DB_PATH)
         self.cursor = self.con.cursor()
         self._ensure_tables()
+
+        # Conexión separada para pedidos (DB distinta)
+        PEDIDOS_DB = DB_PATH.with_name("pedidos.db")
+        self.ped_con = sqlite3.connect(PEDIDOS_DB)
+        self.ped_cursor = self.ped_con.cursor()
+        self._ensure_pedidos_tables()
 
         # Frames
         self.frame_login = ttk.Frame(self.root, padding=16)
@@ -61,6 +67,48 @@ class LoginApp:
             )
         """)
         self.con.commit()
+
+    def _ensure_pedidos_tables(self):
+        # tablas en DB separada (pedidos.db)
+        self.ped_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pedidos (
+                codigo_pedido TEXT PRIMARY KEY,
+                proveedor TEXT,
+                fecha TEXT,
+                estado TEXT
+            )
+        """)
+        self.ped_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pedido_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo_pedido TEXT,
+                producto TEXT,
+                cantidad INTEGER,
+                FOREIGN KEY(codigo_pedido) REFERENCES pedidos(codigo_pedido)
+            )
+        """)
+        self.ped_con.commit()
+
+        # sincronizar pedidos desde facturas (si existen códigos de pedido)
+        try:
+            self.cursor.execute("SELECT DISTINCT codigo_pedido, proveedor, fecha FROM facturas WHERE codigo_pedido IS NOT NULL AND codigo_pedido != ''")
+            for codigo, proveedor, fecha in self.cursor.fetchall():
+                self.ped_cursor.execute("SELECT 1 FROM pedidos WHERE codigo_pedido = ?", (codigo,))
+                if not self.ped_cursor.fetchone():
+                    self.ped_cursor.execute("INSERT INTO pedidos (codigo_pedido, proveedor, fecha, estado) VALUES (?, ?, ?, ?)",
+                                            (codigo, proveedor or "", fecha or "", "Pendiente"))
+                # items desde facturas
+                self.cursor.execute("SELECT producto, cantidad FROM facturas WHERE codigo_pedido = ?", (codigo,))
+                for producto, cantidad in self.cursor.fetchall():
+                    self.ped_cursor.execute("""
+                        SELECT 1 FROM pedido_items WHERE codigo_pedido = ? AND producto = ? AND cantidad = ?
+                    """, (codigo, producto, cantidad))
+                    if not self.ped_cursor.fetchone():
+                        self.ped_cursor.execute("INSERT INTO pedido_items (codigo_pedido, producto, cantidad) VALUES (?, ?, ?)",
+                                                (codigo, producto, cantidad))
+            self.ped_con.commit()
+        except Exception:
+            pass
 
     # ---------------- LOGIN ----------------
     def build_login_frame(self):
@@ -171,17 +219,27 @@ class LoginApp:
     def launch_system(self, usuario):
         for w in self.root.winfo_children():
             w.destroy()
-        app = SistemaContableApp(self.root, db_connection=self.con, usuario=usuario, cursor=self.cursor)
+        app = SistemaContableApp(
+            self.root,
+            db_connection=self.con,
+            usuario=usuario,
+            cursor=self.cursor,
+            ped_connection=self.ped_con,
+            ped_cursor=self.ped_cursor
+        )
         self.system_app = app
 
 # -----------------
 # Sistema Contable 
 # -----------------
 class SistemaContableApp:
-    def __init__(self, root, db_connection, usuario, cursor):
+    def __init__(self, root, db_connection, usuario, cursor, ped_connection=None, ped_cursor=None):
         self.root = root
         self.con = db_connection
         self.cursor = cursor
+        # conexión y cursor para pedidos (base separada)
+        self.ped_con = ped_connection
+        self.ped_cursor = ped_cursor
         self.usuario = usuario
         self.root.title(f"V.A.C.A")
         try:
@@ -196,7 +254,7 @@ class SistemaContableApp:
         rol = self.usuario.get("rol", "")
         if rol == "Auxiliar Contable":
             self.crear_tab_factura()
-            self.generar_pedido()
+            self.crear_tab_generar_pedido()
         elif rol == "Contadora":
             self.crear_tab_analisis()
             self.crear_tab_revision_de_gastos()
@@ -377,7 +435,24 @@ class SistemaContableApp:
         self.entry_codigo_pedido.delete(0, tk.END)
 
         messagebox.showinfo("Listo", "Producto agregado correctamente.")
-    
+        try:
+            # sincronizar con pedidos.db si se dio un codigo_ped
+            if codigo_ped:
+                self.ped_cursor.execute("SELECT 1 FROM pedidos WHERE codigo_pedido = ?", (codigo_ped,))
+                if not self.ped_cursor.fetchone():
+                    # crear cabecera de pedido usando proveedor/fecha y estado pendiente
+                    self.ped_cursor.execute("INSERT INTO pedidos (codigo_pedido, proveedor, fecha, estado) VALUES (?, ?, ?, ?)",
+                                            (codigo_ped, proveedor, fecha, "Pendiente"))
+                # insertar item si no existe
+                self.ped_cursor.execute("SELECT 1 FROM pedido_items WHERE codigo_pedido = ? AND producto = ? AND cantidad = ?",
+                                        (codigo_ped, producto, cantidad))
+                if not self.ped_cursor.fetchone():
+                    self.ped_cursor.execute("INSERT INTO pedido_items (codigo_pedido, producto, cantidad) VALUES (?, ?, ?)",
+                                            (codigo_ped, producto, cantidad))
+                self.ped_con.commit()
+        except Exception:
+            pass
+
     # -------------------------
     # TAB: Análisis
     # -------------------------
@@ -463,34 +538,56 @@ class SistemaContableApp:
         self.entry_cantidad_pedido.delete(0, "end")
 
     def registrar_pedido(self):
-        proveedor = self.entry_proveedor_pedido.get()
-        fecha = self.entry_fecha_pedido.get()
-        estado = self.combo_estado.get()
+        proveedor = self.entry_proveedor_pedido.get().strip()
+        fecha = self.entry_fecha_pedido.get().strip()
+        estado = self.combo_estado.get().strip()
         productos = self.pedido_table.get_children()
 
         if not proveedor or not fecha or not productos:
             messagebox.showerror("Error", "Todos los campos y al menos un producto son obligatorios.")
             return
 
+        try:
+            datetime.strptime(fecha, "%Y-%m-%d")
+        except Exception:
+            messagebox.showerror("Error", "Fecha inválida. Use formato YYYY-MM-DD.")
+            return
+
         codigo_pedido = "PED-" + datetime.now().strftime("%Y%m%d%H%M%S")
 
-        # Insertar cada producto del pedido al registro
+        # Guardar pedido en pedidos.db
+        try:
+            self.ped_cursor.execute("INSERT INTO pedidos (codigo_pedido, proveedor, fecha, estado) VALUES (?, ?, ?, ?)",
+                                    (codigo_pedido, proveedor, fecha, estado))
+            for item in productos:
+                producto, cantidad = self.pedido_table.item(item, "values")
+                self.ped_cursor.execute("INSERT INTO pedido_items (codigo_pedido, producto, cantidad) VALUES (?, ?, ?)",
+                                        (codigo_pedido, producto, int(cantidad)))
+            self.ped_con.commit()
+        except Exception as e:
+            messagebox.showerror("Error BD Pedidos", f"No se pudo guardar el pedido en pedidos.db:\n{e}")
+            return
+
+        # Insertar visualmente en la tabla de la derecha (una fila por item)
         for item in productos:
             producto, cantidad = self.pedido_table.item(item, "values")
-            self.tabla_registro_pedidos.insert("", "end", values=(codigo_pedido, producto, cantidad))
+            self.tabla_registro_pedidos.insert("", "end", values=(codigo_pedido, proveedor, producto, cantidad, fecha, estado))
 
         messagebox.showinfo("Pedido Registrado",
                             f"Pedido guardado correctamente.\nCódigo generado: {codigo_pedido}")
 
-        # Limpiar la tabla de productos para un nuevo pedido
         for item in productos:
             self.pedido_table.delete(item)
 
-    def generar_pedido(self):
+    def crear_tab_generar_pedido(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Generar Pedido")
 
-        # --- Datos generales del pedido ---
+        # permitir expansión para la parte derecha (registro de pedidos)
+        frame.grid_columnconfigure(3, weight=1)
+        frame.grid_rowconfigure(6, weight=1)
+
+        # --- Datos generales del pedido --- (izquierda)
         ttk.Label(frame, text="Proveedor:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
         self.entry_proveedor_pedido = ttk.Entry(frame, width=30)
         self.entry_proveedor_pedido.grid(row=0, column=1, padx=10, pady=5)
@@ -499,7 +596,7 @@ class SistemaContableApp:
         self.entry_fecha_pedido = ttk.Entry(frame, width=20)
         self.entry_fecha_pedido.grid(row=1, column=1, padx=10, pady=5)
 
-        # --- Productos ---
+        # --- Productos --- (izquierda)
         ttk.Label(frame, text="Producto:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.entry_producto_pedido = ttk.Entry(frame)
         self.entry_producto_pedido.grid(row=2, column=1, padx=10, pady=5)
@@ -509,33 +606,57 @@ class SistemaContableApp:
         self.entry_cantidad_pedido.grid(row=3, column=1, padx=10, pady=5)
 
         ttk.Label(frame, text="Estado del Pedido:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
-        self.combo_estado = ttk.Combobox(frame, values=["Pendiente", "En Proceso", "Entregado", "Cancelado"], width=20)
+        self.combo_estado = ttk.Combobox(frame, values=["Pendiente", "En Proceso", "Entregado", "Cancelado"], width=20, state="readonly")
         self.combo_estado.grid(row=4, column=1, padx=10, pady=5)
         self.combo_estado.current(0)
 
         ttk.Button(frame, text="Agregar Producto",
                 command=self.agregar_producto_tabla).grid(row=5, column=1, pady=10)
 
-        # --- Tabla de productos agregados (izquierda) ---
+        # --- Tabla de productos agregados (izquierda, debajo) ---
         columnas = ("producto", "cantidad")
         self.pedido_table = ttk.Treeview(frame, columns=columnas, show="headings", height=8)
         self.pedido_table.heading("producto", text="Producto")
         self.pedido_table.heading("cantidad", text="Cantidad")
-        self.pedido_table.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+        self.pedido_table.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
 
         # Botón registrar pedido
         ttk.Button(frame, text="Registrar Pedido",
                 command=self.registrar_pedido).grid(row=7, column=0, columnspan=2, pady=15)
 
-        # --- Tabla registro de pedidos (DERECHA) ---
-        ttk.Label(frame, text="Registro de Pedidos").grid(row=0, column=3, padx=10, pady=10)
+        # --- Tabla registro de pedidos (DERECHA) con más columnas ---
+        ttk.Label(frame, text="Registro de Pedidos").grid(row=0, column=3, padx=10, pady=10, sticky="w")
 
-        columnas_registro = ("codigo", "producto", "cantidad")
+        columnas_registro = ("codigo", "proveedor", "producto", "cantidad", "fecha", "estado")
         self.tabla_registro_pedidos = ttk.Treeview(frame, columns=columnas_registro, show="headings", height=18)
         self.tabla_registro_pedidos.heading("codigo", text="Código")
+        self.tabla_registro_pedidos.heading("proveedor", text="Proveedor")
         self.tabla_registro_pedidos.heading("producto", text="Producto")
         self.tabla_registro_pedidos.heading("cantidad", text="Cantidad")
-        self.tabla_registro_pedidos.grid(row=1, column=3, rowspan=10, padx=10, pady=10, sticky="n")
+        self.tabla_registro_pedidos.heading("fecha", text="Fecha")
+        self.tabla_registro_pedidos.heading("estado", text="Estado")
+        # ajustar anchos
+        self.tabla_registro_pedidos.column("codigo", width=120, anchor="center")
+        self.tabla_registro_pedidos.column("proveedor", width=180, anchor="w")
+        self.tabla_registro_pedidos.column("producto", width=160, anchor="w")
+        self.tabla_registro_pedidos.column("cantidad", width=90, anchor="center")
+        self.tabla_registro_pedidos.column("fecha", width=110, anchor="center")
+        self.tabla_registro_pedidos.column("estado", width=110, anchor="center")
+
+        self.tabla_registro_pedidos.grid(row=1, column=3, rowspan=10, padx=10, pady=10, sticky="nsew")
+
+        # Cargar pedidos guardados en pedidos.db (una fila por item)
+        try:
+            self.ped_cursor.execute("""
+                SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+                FROM pedidos p
+                JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+                ORDER BY p.fecha DESC, p.codigo_pedido DESC
+            """)
+            for row in self.ped_cursor.fetchall():
+                self.tabla_registro_pedidos.insert("", "end", values=row)
+        except Exception:
+            pass
 
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
