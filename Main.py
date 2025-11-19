@@ -385,9 +385,12 @@ class SistemaContableApp:
         def proveedores():
             producto_pro = self.entrada_pro.get()
             if producto_pro == "":
-                messagebox.showinfo("Producto vacío", "Debe indicar el producto por evaluar.")
+                messagebox.showwarning("Producto vacío", "Debe indicar el producto por evaluar.")
                 return
             (a,b,c) = analisis.recomendacion()
+            if (a,b,c) == (0,0,0):
+                messagebox.showwarning("Producto no registrado", "El producto que se ha intentado analizar no tiene registros")
+            
             r1.config(text=a)
             r2.config(text=b)
             r3.config(text=c)
