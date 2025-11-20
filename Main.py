@@ -1009,51 +1009,7 @@ class SistemaContableApp:
         # retornamos también valores auxiliares para otras vistas cuando sea necesario
         # orden de retorno: (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido, subtotal, total, id)
         return rows
-    """
-    def calcular_ret(self):
-        facturas = self.cargar_facturas()
-        year = self.year.get()
-        mes = self.mes.current() + 1  # Mes actual (1-12)
-        retenciones_mes = 0
-        for f in facturas:
-            fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")    
-            if fecha_factura.month == mes and fecha_factura.year == int(year):
-                retenciones_mes += f[8]*(f[7]/100)  # total * (retencion / 100)
-        self.lbl_resultado.config(text=f"$ {retenciones_mes:.2f}")
-    
-    def filtrar_por_año(self, event):
-        año_seleccionado = event.widget.get()  # Obtener el año seleccionado
 
-        # Limpiar la tabla antes de agregar los nuevos datos
-        for item in self.retenciones_table.get_children():
-            self.retenciones_table.delete(item)
-
-        facturas = self.cargar_facturas()
-        for f in facturas:
-            fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")
-            if fecha_factura.year == int(año_seleccionado):
-                filas = (f[13], f[0], f[11], f[7], f[12])  # id, proveedor, subtotal, retencion, total
-                self.retenciones_table.insert("", "end", values=filas)
-        self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
-        self.lbl_resultado.config(text="$ 0.00")
-    
-    def filtrar_por_mes(self, event):
-        año_seleccionado = event.widget.get()  # Obtener el año seleccionado
-        mes_seleccionado = event.widget.current() + 1  # Obtener el índice del mes seleccionado (0-11) y convertir a 1-12
-
-        # Limpiar la tabla antes de agregar los nuevos datos
-        for item in self.retenciones_table.get_children():
-            self.retenciones_table.delete(item)
-
-        facturas = self.cargar_facturas()
-        for f in facturas:
-            fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")
-            if fecha_factura.month == mes_seleccionado:
-                filas = (f[13], f[0], f[11], f[7], f[12])  # id, proveedor, subtotal, retencion, total
-                self.retenciones_table.insert("", "end", values=filas)
-        self.mes_Nro = self.mes.current() + 1  # Mes actual (1-12)
-        self.lbl_resultado.config(text="$ 0.00")
-    """
     def filtrar_retenciones(self):
         year = self.year.get()
         mes = self.mes.current() + 1  # Mes actual (1-12)
