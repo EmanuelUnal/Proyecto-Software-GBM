@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timedelta
-#(1, 'AgroSupply', '2025-10-01', 'Fertilizante A', 10, 'Agroquímico', 25.0, 19.0, 0.0, 297.5, 'FE0001', 'PD001', 250.0, 297.5)
+
 def hace_un_mes(fecha_str:str):
     fechae = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     fecha = datetime.today().date()
@@ -252,8 +252,3 @@ def productos(producto):
         text2 = crece2(dev2)
     precio = "*El precio actual del producto\nestá en aproximadamente ${}".format(round(lista[-1],1))
     return (precio,text1,text2)
-
-(a,b,c) = productos("Fertilizante NPK")
-print(a)
-print(b)
-print(c)
