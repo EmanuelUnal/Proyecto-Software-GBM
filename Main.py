@@ -469,6 +469,22 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+        def ana_productos():
+            producto_pro = self.entrada_pro.get().strip()
+            if producto_pro == "":
+                messagebox.showwarning("Producto vacío", "Debe indicar el producto por evaluar.")
+                return
+            (a,b,c) = analisis.productos(producto_pro)
+            if (a,b,c) == (0,0,0):
+                messagebox.showerror("Producto no registrado", "El producto que se ha intentado analizar no tiene registros")
+                return
+            if (a,b,c) == (-1,-1,-1):
+                messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
+                return
+            r7.config(text=a)
+            r8.config(text=b)
+            r9.config(text=c)
+        
         def proveedores():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -478,13 +494,10 @@ class SistemaContableApp:
             if (a,b,c) == (0,0,0):
                 messagebox.showerror("Producto no registrado", "El producto que se ha intentado analizar no tiene registros")
                 return
-            if (a,b,c) == (-1,-1,-1):
-                messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
-                return
-            
             r1.config(text=a)
             r2.config(text=b)
             r3.config(text=c)
+
         def general():
             (a,b,c) = analisis.general()
             if (a,b,c) == (-1,-1,-1):
@@ -508,7 +521,7 @@ class SistemaContableApp:
 
         ttk.Label(fb, text="Producto:\n(Ingresar producto a evaluar)").grid(row=1, column=2, padx=10, pady=5)
         ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar").grid(row=3, column=2, padx=10, pady=5)
+        ttk.Button(fb, text="Evaluar", command=ana_productos).grid(row=3, column=2, padx=10, pady=5)
 
         ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
         ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
@@ -520,9 +533,9 @@ class SistemaContableApp:
         r4 = ttk.Label(fb, text="Promedio de gastos en\nlos últimos tres meses")
         r5 = ttk.Label(fb, text="Producto de mayor inversión")
         r6 = ttk.Label(fb, text="Aumento del gasto en\ntres meses")
-        r7 = ttk.Label(fb, text="R1,3")
-        r8 = ttk.Label(fb, text="R2,3")
-        r9 = ttk.Label(fb, text="R3,3")
+        r7 = ttk.Label(fb, text="Precio actual")
+        r8 = ttk.Label(fb, text="Comportamiento en los\núltimos seis meses")
+        r9 = ttk.Label(fb, text="Posible comportamiento\nfuturo")
 
         r1.grid(row=10, column=0, padx=10, pady=5)
         r2.grid(row=11, column=0, padx=10, pady=5)
