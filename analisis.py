@@ -134,7 +134,7 @@ def recomendacion(producto: str):
             "{} con ${}".format(mas_barata[0], mas_barata[1]),
         "*La empresa más confiable es:\n" +
         "{} con {} llamados".format(mas_llamada[0], mas_llamada[1]),
-        "*La empresa con menos aumento\n" +
+        "*La empresa que menos aumentó\n" +
         "de precios es:\n{} con ${}".format(menos_creciente[0], menos_creciente[1]))
 
 def general():
