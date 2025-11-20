@@ -977,6 +977,10 @@ class SistemaContableApp:
         
         ttk.Button(frame_retenciones, text="Aplicar", command=self.filtrar_retenciones).grid(row=0, column=0, padx=500, sticky='w', pady=0)
 
+        ttk.Label(frame_retenciones, text="Estado = ").grid(row=0, column=0, padx=575, pady=10, sticky="w")
+        self.lbl_resultado_estado = ttk.Label(frame_retenciones, text="?")
+        self.lbl_resultado_estado.grid(row=0, column=0, padx=625, pady=10, sticky="w")
+
         columns = ("id", "proveedor", "subtotal", "retencion", "total")
         self.retenciones_table = ttk.Treeview(frame_retenciones, columns=columns, show="headings")
         self.retenciones_table.heading("id", text="ID")
@@ -1016,6 +1020,12 @@ class SistemaContableApp:
         for item in self.retenciones_table.get_children():
             self.retenciones_table.delete(item)
         facturas = self.cargar_facturas()
+        estado = self.cursor.execute("SELECT estado FROM estadoRetenciones WHERE year = ? AND month = ?", (year, mes)).fetchone()
+        if estado == (1,):
+            self.lbl_resultado_estado.config(text="PAGADO", foreground="green")
+        else:
+            self.lbl_resultado_estado.config(text="PENDIENTE", foreground="red")
+        print(estado)
         for f in facturas:
             fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")
             if (not year or fecha_factura.year == int(year)) and (not mes or fecha_factura.month == mes):
