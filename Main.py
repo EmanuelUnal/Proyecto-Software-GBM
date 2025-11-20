@@ -261,7 +261,11 @@ class SistemaContableApp:
         self.root.geometry("1100x720")
 
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True)
+        self.notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 50))
+        self._create_bottom_bar()
+        self.root.update()
+        self.root.minsize(self.root.winfo_width(), self.root.winfo_height())
+
 
         rol = self.usuario.get("rol", "")
         if rol == "Auxiliar Contable":
@@ -271,15 +275,16 @@ class SistemaContableApp:
             self.crear_tab_analisis()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
-            
-        self._create_top_bar()
+            self._create_bottom_bar()
 
-    def _create_top_bar(self):
-        top = ttk.Frame(self.root)
-        top.pack(fill=tk.X, pady=6, padx=6)
-        ttk.Label(top, text=f"Usuario: {self.usuario['nombre']}").pack(side=tk.LEFT, padx=(6,12))
-        ttk.Label(top, text=f"Rol: {self.usuario['rol']}").pack(side=tk.LEFT)
-        ttk.Button(top, text="Cerrar Sesión", command=self.do_logout).pack(side=tk.RIGHT)
+
+    def _create_bottom_bar(self):
+        bottom = ttk.Frame(self.root)
+        bottom.pack(side=tk.BOTTOM, fill=tk.X, pady=6)
+
+        ttk.Label(bottom, text=f"Usuario: {self.usuario['nombre']} - {self.usuario['rol']}").pack(side=tk.LEFT, padx=10)
+        ttk.Button(bottom, text="Cerrar Sesión", command=self.do_logout).pack(side=tk.RIGHT, padx=10)
+
 
     def do_logout(self):
         if messagebox.askyesno("Confirmar", "¿Cerrar sesión?"):
