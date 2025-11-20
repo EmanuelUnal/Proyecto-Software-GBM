@@ -510,17 +510,16 @@ class SistemaContableApp:
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
+        self.entrada_pro = ttk.Entry(fb)
+        self.entrada_pro.grid(row=2, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
-        self.entrada_pro = ttk.Entry(fb)
-        self.entrada_pro.grid(row=2, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
 
         ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
         ttk.Button(fb, text="Evaluar", command=general).grid(row=3, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Producto:\n(Ingresar producto a evaluar)").grid(row=1, column=2, padx=10, pady=5)
-        ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=ana_productos).grid(row=3, column=2, padx=10, pady=5)
 
         ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
