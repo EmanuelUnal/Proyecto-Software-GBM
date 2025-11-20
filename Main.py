@@ -1001,6 +1001,10 @@ class SistemaContableApp:
 
         self.lbl_resultado = ttk.Label(frame_retenciones, text="$ 0.00",  background="#e0e0e0", foreground="#000000")
         self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
+
+        self.boton_pagar = ttk.Button(frame_retenciones, text="Pagar", command=self.pagar_retencion)
+        self.boton_pagar.grid(row=5, column=0, padx=150, sticky='w', pady=0)
+        self.boton_pagar.grid_remove()
    
     def cargar_facturas(self):
         # Selecciona las columnas en el mismo orden que las columnas de la Treeview 'productos_table'
@@ -1015,6 +1019,7 @@ class SistemaContableApp:
         return rows
 
     def filtrar_retenciones(self):
+        self.lbl_resultado.config(text="$ 0.00")
         year = self.year.get()
         mes = self.mes.current() + 1  # Mes actual (1-12)
         for item in self.retenciones_table.get_children():
@@ -1023,9 +1028,11 @@ class SistemaContableApp:
         estado = self.cursor.execute("SELECT estado FROM estadoRetenciones WHERE year = ? AND month = ?", (year, mes)).fetchone()
         if estado == (1,):
             self.lbl_resultado_estado.config(text="PAGADO", foreground="green")
+            self.boton_pagar.grid_remove()
         else:
             self.lbl_resultado_estado.config(text="PENDIENTE", foreground="red")
-        print(estado)
+            self.boton_pagar.grid()
+        
         for f in facturas:
             fecha_factura = datetime.strptime(f[1], "%Y-%m-%d")
             if (not year or fecha_factura.year == int(year)) and (not mes or fecha_factura.month == mes):
@@ -1042,6 +1049,17 @@ class SistemaContableApp:
             if (not year or fecha_factura.year == int(year)) and (not mes or fecha_factura.month == mes):
                 ret_mes += f[11]*f[7]/100  # subtotal * (retencion / 100)
         self.lbl_resultado.config(text=f"$ {ret_mes:.2f}")
+
+    def pagar_retencion(self):
+        year = self.year.get()
+        mes = self.mes.current() + 1  # Mes actual (1-12)
+        try:
+            self.cursor.execute("INSERT OR REPLACE INTO estadoRetenciones (year, month, estado) VALUES (?, ?, ?)", (year, mes, 1))
+            self.con.commit()
+            messagebox.showinfo("Listo", "Retención marcada como pagada.")
+            self.filtrar_retenciones()
+        except:
+            messagebox.showerror("Error", "No se pudo actualizar el estado de la retención.")
 
 
 if __name__ == "__main__":
