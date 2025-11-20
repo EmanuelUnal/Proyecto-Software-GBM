@@ -1003,7 +1003,7 @@ class SistemaContableApp:
         self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
 
         self.boton_pagar = ttk.Button(frame_retenciones, text="Pagar", command=self.pagar_retencion)
-        self.boton_pagar.grid(row=5, column=0, padx=150, sticky='w', pady=0)
+        self.boton_pagar.grid(row=5, column=0, padx=155, sticky='w', pady=0)
         self.boton_pagar.grid_remove()
    
     def cargar_facturas(self):
