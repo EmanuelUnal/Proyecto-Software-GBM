@@ -261,7 +261,11 @@ class SistemaContableApp:
         self.root.geometry("1100x720")
 
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True)
+        self.notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 50))
+        self._create_bottom_bar()
+        self.root.update()
+        self.root.minsize(self.root.winfo_width(), self.root.winfo_height())
+
 
         rol = self.usuario.get("rol", "")
         if rol == "Auxiliar Contable":
@@ -271,15 +275,16 @@ class SistemaContableApp:
             self.crear_tab_analisis()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
-            
-        self._create_top_bar()
+            self._create_bottom_bar()
 
-    def _create_top_bar(self):
-        top = ttk.Frame(self.root)
-        top.pack(fill=tk.X, pady=6, padx=6)
-        ttk.Label(top, text=f"Usuario: {self.usuario['nombre']}").pack(side=tk.LEFT, padx=(6,12))
-        ttk.Label(top, text=f"Rol: {self.usuario['rol']}").pack(side=tk.LEFT)
-        ttk.Button(top, text="Cerrar Sesión", command=self.do_logout).pack(side=tk.RIGHT)
+
+    def _create_bottom_bar(self):
+        bottom = ttk.Frame(self.root)
+        bottom.pack(side=tk.BOTTOM, fill=tk.X, pady=6)
+
+        ttk.Label(bottom, text=f"Usuario: {self.usuario['nombre']} - {self.usuario['rol']}").pack(side=tk.LEFT, padx=10)
+        ttk.Button(bottom, text="Cerrar Sesión", command=self.do_logout).pack(side=tk.RIGHT, padx=10)
+
 
     def do_logout(self):
         if messagebox.askyesno("Confirmar", "¿Cerrar sesión?"):
@@ -510,17 +515,17 @@ class SistemaContableApp:
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
-
-        ttk.Label(fb, text="Empresas:\n(Ingresar producto a evaluar)").grid(row=1, column=0, padx=10, pady=5)
+        ttk.Label(fb, text="Ingresar producto a evaluar").grid(row=0, column=1, padx=10, pady=5)
         self.entrada_pro = ttk.Entry(fb)
-        self.entrada_pro.grid(row=2, column=0, padx=10, pady=5)
+        self.entrada_pro.grid(row=1, column=1, padx=10, pady=5)
+
+        ttk.Label(fb, text="Empresas:").grid(row=2, column=0, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
 
-        ttk.Label(fb, text="General:").grid(row=1, column=1, padx=200, pady=5)
+        ttk.Label(fb, text="General:").grid(row=2, column=1, padx=200, pady=5)
         ttk.Button(fb, text="Evaluar", command=general).grid(row=3, column=1, padx=10, pady=5)
 
-        ttk.Label(fb, text="Producto:\n(Ingresar producto a evaluar)").grid(row=1, column=2, padx=10, pady=5)
-        ttk.Entry(fb).grid(row=2, column=2, padx=10, pady=5)
+        ttk.Label(fb, text="Producto:").grid(row=2, column=2, padx=10, pady=5)
         ttk.Button(fb, text="Evaluar", command=ana_productos).grid(row=3, column=2, padx=10, pady=5)
 
         ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
