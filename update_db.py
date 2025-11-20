@@ -12,8 +12,8 @@ def main():
     # copyfile(DB_PATH, DB_PATH.with_suffix(".db.bak"))
 
     # Multiplica valoru por 1000 para todos los registros
-    cur.execute("UPDATE facturas SET valoru = valoru * 1000")
-    conn.commit()
+    """ cur.execute("UPDATE facturas SET valoru = valoru * 1000")
+    conn.commit() """
 
     # Recalcula subtotal, valort y total usando valores actualizados
     # subtotal = cantidad * valoru
