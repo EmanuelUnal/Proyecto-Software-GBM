@@ -4,8 +4,18 @@ import analisis
 from tkinter import ttk, messagebox
 from pathlib import Path
 from datetime import datetime
+import sys, os
 
-DB_PATH = Path(__file__).with_name("contabilidad_lechera.db")
+
+def resource_path(relative_path: str) -> str:
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
+DB_PATH = resource_path("contabilidad_lechera.db")
 
 class LoginApp:
     def __init__(self, root):
