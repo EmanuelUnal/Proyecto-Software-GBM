@@ -66,7 +66,7 @@ def crece1(d:float):
 
 def crece2(d:float):
     if d < 0: return "*El crecimiento está decreciendo en\nuna tasa de ${} al mes,\nposiblemente el precio decrezca".format(round(d,1))
-    elif d == 0: return "*El precio crece a un ritmo constante constante"
+    elif d == 0: return "*El precio crece a un ritmo constante"
     else: return "*El crecimiento ha aumentado en\nuna tasa de ${} al mes,\nposiblemente el precio crezca más".format(round(d,1))
 
 def promedio(dic):
