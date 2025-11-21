@@ -519,7 +519,7 @@ class SistemaContableApp:
         def general():
             (a,b,c) = analisis.general()
             if (a,b,c) == (-1,-1,-1):
-                messagebox.showwarning
+                messagebox.showwarning("Sin datos", "No hay datos que actualizar")
             r4.config(text=a)
             r5.config(text=b)
             r6.config(text=c)
