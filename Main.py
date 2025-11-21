@@ -484,6 +484,15 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+        def lista():
+            tabla = Path(__file__).with_name("contabilidad_lechera.db")
+            conexion = sqlite3.connect(tabla)
+            cursor = conexion.cursor()
+            cursor.execute("SELECT DISTINCT producto FROM facturas")
+            filas = cursor.fetchall()
+            conexion.close()
+            return sorted([fila[0] for fila in filas])
+
         def ana_productos():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -528,8 +537,8 @@ class SistemaContableApp:
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
-        ttk.Label(fb, text="Ingresar producto a evaluar").grid(row=0, column=1, padx=10, pady=5)
-        self.entrada_pro = ttk.Entry(fb)
+        ttk.Label(fb, text="Escoger producto a evaluar").grid(row=0, column=1, padx=10, pady=5)
+        self.entrada_pro = ttk.Combobox(fb, values=lista(), state="readonly", width=30)
         self.entrada_pro.grid(row=1, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Empresas:").grid(row=2, column=0, padx=10, pady=5)
