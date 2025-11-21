@@ -124,8 +124,6 @@ def recomendacion(producto: str):
         if prov_bar[empresa][1] < mas_barata[1] or mas_barata[1] == 0:
             mas_barata = (empresa, prov_bar[empresa][1])
     for empresa in precios:
-        print(precios[empresa])
-        print(precios_viejos[empresa])
         dif = diferencial(precios[empresa], precios_viejos[empresa])
         if menos_creciente[1] == "None" or dif[1] < menos_creciente[1]:
             menos_creciente = dif
