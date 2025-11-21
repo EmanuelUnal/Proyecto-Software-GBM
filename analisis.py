@@ -184,7 +184,6 @@ def productos(producto):
     conexion.close()
     if not filas:
         return(0,0,0)
-    conexion.close()
     precio6 = {}
     precio5 = {}
     precio4 = {}
