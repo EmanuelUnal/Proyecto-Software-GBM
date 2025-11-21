@@ -60,12 +60,12 @@ def diferencial(V1: tuple, V2:tuple):
 def aumento(valor:float, recargo:float): return valor + valor * recargo / 100
 
 def crece1(d:float):
-    if d < 0: return "*El precio está decreciendo en\nuna tasa de ${} al mes".format(round(d,1))
+    if d < 0: return "*El precio está decreciendo en\nuna tasa de ${} al mes".format(round(abs(d),1))
     elif d == 0: return "*El precio se mantiene constante"
     else: return "*El precio ha aumentado en\nuna tasa de ${} al mes".format(round(d,1))
 
 def crece2(d:float):
-    if d < 0: return "*El crecimiento está decreciendo en\nuna tasa de ${} al mes,\nposiblemente el precio decrezca".format(round(d,1))
+    if d < 0: return "*El crecimiento se está reduciendo en\nuna tasa de ${} al mes,\nposiblemente el precio decrezca".format(round(abs(d),1))
     elif d == 0: return "*El precio crece a un ritmo constante"
     else: return "*El crecimiento ha aumentado en\nuna tasa de ${} al mes,\nposiblemente el precio crezca más".format(round(d,1))
 
