@@ -4,6 +4,8 @@ import analisis
 from tkinter import ttk, messagebox
 from pathlib import Path
 from datetime import datetime
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 import sys, os
 
 
@@ -283,6 +285,7 @@ class SistemaContableApp:
             self.crear_tab_generar_pedido()
         elif rol == "Contadora":
             self.crear_tab_analisis()
+            self.crear_tab_graf()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
             self._create_bottom_bar()
@@ -573,6 +576,13 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
+
+    #--------------------------
+    #TAB: Gráficos
+    #--------------------------
+    def crear_tab_graf(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Gráficos")
 
     # -------------------------
     # TAB: Revisión de Gastos Mensuales
