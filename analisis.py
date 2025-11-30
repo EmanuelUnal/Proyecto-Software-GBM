@@ -76,7 +76,7 @@ def promedio(dic):
 
 def precio_mes(dic):
     if not dic:
-        return 0
+        return 0, 0
     precios = []
     fechas = []
     meses = []
@@ -289,7 +289,7 @@ def historial_productos(producto):
     filas = cursor.fetchall()
     conexion.close()
     if not filas:
-        return 
+        return 0, 0
     precio6 = {}
     precio5 = {}
     precio4 = {}
@@ -323,7 +323,7 @@ def historial_productos(producto):
        mes3 == None and
        mes4 == None and
        mes5 == None and
-       mes6 == None): return (-1, -1)
+       mes6 == None): return -1, -1
     
     meses = []
     valores = []
@@ -345,9 +345,7 @@ def historial_productos(producto):
     if mes6 != None: 
         meses.append(mes6)
         valores.append(val6)
-    if len(meses) < 2: return (-2, -2)
-
-    
-    return (meses, valores)
+    if len(meses) < 2: return -2, -2
+    return meses, valores
 
 #(1, 'AgroSupply', '2025-10-01', 'Fertilizante', 10, 'Agroquímico', 25000.0, 19.0, 0.0, 297500.0, 'FE0001', 'PD001', 250000.0, 297500.0)
