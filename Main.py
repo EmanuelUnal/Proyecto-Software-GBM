@@ -583,6 +583,14 @@ class SistemaContableApp:
     def crear_tab_graf(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
+        grafico = ttk.Frame(frame, cursor="heart")
+        grafico.place(rely=0.15, relx=0.11, relwidth=0.78, relheight=0.76)
+        boton = ttk.Button(frame, text="Precios")
+        boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
+        boton = ttk.Button(frame, text="impuestos")
+        boton.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
+        boton = ttk.Button(frame, text="Gasto")
+        boton.place(rely=0.05, relx=0.63, relheight=0.07, relwidth=0.15)
 
     # -------------------------
     # TAB: Revisión de Gastos Mensuales
