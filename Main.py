@@ -581,12 +581,46 @@ class SistemaContableApp:
     #TAB: Gráficos
     #--------------------------
     def crear_tab_graf(self):
+        def lista():
+            tabla = Path(__file__).with_name("contabilidad_lechera.db")
+            conexion = sqlite3.connect(tabla)
+            cursor = conexion.cursor()
+            cursor.execute("SELECT DISTINCT producto FROM facturas")
+            filas = cursor.fetchall()
+            conexion.close()
+            return sorted([fila[0] for fila in filas])
+        def grafico_producto():
+            producto = self.entrada_producto.get().strip()
+            if producto == "":
+                messagebox.showwarning("Producto vacío", "Debe indicar qué producto desea analizar")
+                return
+            
+            meses, valores = analisis.historial_productos(producto)
+            if meses == 0:
+                messagebox.showerror("No existe el producto", "No hay registros del producto que se intenta buscar")
+                return
+            if meses == -1:
+                messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
+                return
+            if meses == -2:
+                messagebox.showwarning("Datos insuficientes", "No hay suficientes registros para realizar bien el análisis")
+                return
+            figura = Figure(figsize=(5, 4), dpi=0)
+            graficar = figura.add_subplot(111)
+            graficar.plot(meses, valores)
+            graficar.set_title("Evolución precio {}".format(producto))
+            canvas = FigureCanvasTkAgg(figura, master=self.grafico)
+            canvas.draw()
+            canvas.get_tk_widget().pack()
+
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
-        grafico = ttk.Frame(frame, cursor="heart")
-        grafico.place(rely=0.15, relx=0.11, relwidth=0.78, relheight=0.76)
-        boton = ttk.Button(frame, text="Precios")
+        self.grafico = ttk.Frame(frame, cursor="heart")
+        self.grafico.place(rely=0.2, relx=0.11, relwidth=0.78, relheight=0.76)
+        boton = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
         boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
+        self.entrada_producto = ttk.Combobox(frame, values=lista(), state="readonly", width=30)
+        self.entrada_producto.place(rely=0.13, relx=0.11, relheight=0.04, relwidth=0.15)
         boton = ttk.Button(frame, text="impuestos")
         boton.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
         boton = ttk.Button(frame, text="Gasto")
