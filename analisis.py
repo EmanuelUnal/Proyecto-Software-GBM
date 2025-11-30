@@ -74,6 +74,35 @@ def promedio(dic):
         return 0
     return sum(dic.values()) / len(dic)
 
+def precio_mes(dic):
+    if not dic:
+        return 0
+    precios = []
+    fechas = []
+    meses = []
+    for clave in dic:
+        fechas.append(dic[clave][1])
+        precios.append(dic[clave][0])
+    for fecha in fechas:
+        meses.append(int(fecha.split("-")[1]))
+    precio = sum(precios) / len(precios)
+    num_mes = round(sum(meses) / len(meses))
+    match num_mes:
+        case 1:mes = "ENE"
+        case 2:mes = "FEB"
+        case 3:mes = "MAR"
+        case 4:mes = "ABR"
+        case 5:mes = "MAY"
+        case 6:mes = "JUN"
+        case 7:mes = "JUL"
+        case 8:mes = "AGO"
+        case 9:mes = "SEP"
+        case 10:mes = "OCT"
+        case 11:mes = "NOV"
+        case 12:mes = "DIC"
+        case _:mes = None
+    return mes, precio
+
 
 def recomendacion(producto: str):
     tabla = Path(__file__).with_name("contabilidad_lechera.db")
@@ -249,3 +278,76 @@ def productos(producto):
         text2 = crece2(dev2)
     precio = "*El precio actual del producto\nestá en aproximadamente ${}".format(round(lista[-1],1))
     return (precio,text1,text2)
+
+def historial_productos(producto):
+    tabla = Path(__file__).with_name("contabilidad_lechera.db")
+
+    conexion = sqlite3.connect(tabla)
+    cursor = conexion.cursor()
+
+    cursor.execute("SELECT * FROM facturas WHERE producto = ?", (producto,))
+    filas = cursor.fetchall()
+    conexion.close()
+    if not filas:
+        return 
+    precio6 = {}
+    precio5 = {}
+    precio4 = {}
+    precio3 = {}
+    precio2 = {}
+    precio1 = {}
+    for fila in filas:
+        match mes_exacto(fila[2]):
+            case 1:
+                precio1[fila[1]] = (fila[6], fila[2])
+            case 2:
+                precio2[fila[1]] = (fila[6], fila[2])
+            case 3:
+                precio3[fila[1]] = (fila[6], fila[2])
+            case 4:
+                precio4[fila[1]] = (fila[6], fila[2])
+            case 5:
+                precio5[fila[1]] = (fila[6], fila[2])
+            case 6:
+                precio6[fila[1]] = (fila[6], fila[2])
+            case _:
+                pass
+    mes1, val1 = precio_mes(precio1)
+    mes2, val2 = precio_mes(precio2)
+    mes3, val3 = precio_mes(precio3)
+    mes4, val4 = precio_mes(precio4)
+    mes5, val5 = precio_mes(precio5)
+    mes6, val6 = precio_mes(precio6)
+    if(mes1 == None and
+       mes2 == None and
+       mes3 == None and
+       mes4 == None and
+       mes5 == None and
+       mes6 == None): return (-1, -1)
+    
+    meses = []
+    valores = []
+    if mes1 != None: 
+        meses.append(mes1)
+        valores.append(val1)
+    if mes2 != None: 
+        meses.append(mes2)
+        valores.append(val2)
+    if mes3 != None: 
+        meses.append(mes3)
+        valores.append(val3)
+    if mes4 != None: 
+        meses.append(mes4)
+        valores.append(val4)
+    if mes5 != None: 
+        meses.append(mes5)
+        valores.append(val5)
+    if mes6 != None: 
+        meses.append(mes6)
+        valores.append(val6)
+    if len(meses) < 2: return (-2, -2)
+
+    
+    return (meses, valores)
+
+#(1, 'AgroSupply', '2025-10-01', 'Fertilizante', 10, 'Agroquímico', 25000.0, 19.0, 0.0, 297500.0, 'FE0001', 'PD001', 250000.0, 297500.0)
