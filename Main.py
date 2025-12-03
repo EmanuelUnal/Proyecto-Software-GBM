@@ -4,6 +4,8 @@ import analisis
 from tkinter import ttk, messagebox
 from pathlib import Path
 from datetime import datetime
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 import sys, os
 
 
@@ -283,6 +285,7 @@ class SistemaContableApp:
             self.crear_tab_generar_pedido()
         elif rol == "Contadora":
             self.crear_tab_analisis()
+            self.crear_tab_graf()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
             self._create_bottom_bar()
@@ -484,6 +487,15 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+        def lista():
+            tabla = Path(__file__).with_name("contabilidad_lechera.db")
+            conexion = sqlite3.connect(tabla)
+            cursor = conexion.cursor()
+            cursor.execute("SELECT DISTINCT producto FROM facturas")
+            filas = cursor.fetchall()
+            conexion.close()
+            return sorted([fila[0] for fila in filas])
+
         def ana_productos():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -519,7 +531,7 @@ class SistemaContableApp:
         def general():
             (a,b,c) = analisis.general()
             if (a,b,c) == (-1,-1,-1):
-                messagebox.showwarning
+                messagebox.showwarning("Sin datos", "No hay datos que actualizar")
             r4.config(text=a)
             r5.config(text=b)
             r6.config(text=c)
@@ -528,8 +540,8 @@ class SistemaContableApp:
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
         fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
-        ttk.Label(fb, text="Ingresar producto a evaluar").grid(row=0, column=1, padx=10, pady=5)
-        self.entrada_pro = ttk.Entry(fb)
+        ttk.Label(fb, text="Escoger producto a evaluar").grid(row=0, column=1, padx=10, pady=5)
+        self.entrada_pro = ttk.Combobox(fb, values=lista(), state="readonly", width=30)
         self.entrada_pro.grid(row=1, column=1, padx=10, pady=5)
 
         ttk.Label(fb, text="Empresas:").grid(row=2, column=0, padx=10, pady=5)
@@ -564,6 +576,55 @@ class SistemaContableApp:
         r7.grid(row=10, column=2, padx=10, pady=5)
         r8.grid(row=11, column=2, padx=10, pady=5)
         r9.grid(row=12, column=2, padx=10, pady=5)
+
+    #--------------------------
+    #TAB: Gráficos
+    #--------------------------
+    def crear_tab_graf(self):
+        def lista():
+            tabla = Path(__file__).with_name("contabilidad_lechera.db")
+            conexion = sqlite3.connect(tabla)
+            cursor = conexion.cursor()
+            cursor.execute("SELECT DISTINCT producto FROM facturas")
+            filas = cursor.fetchall()
+            conexion.close()
+            return sorted([fila[0] for fila in filas])
+        def grafico_producto():
+            producto = self.entrada_producto.get().strip()
+            if producto == "":
+                messagebox.showwarning("Producto vacío", "Debe indicar qué producto desea analizar")
+                return
+            
+            meses, valores = analisis.historial_productos(producto)
+            if meses == 0:
+                messagebox.showerror("No existe el producto", "No hay registros del producto que se intenta buscar")
+                return
+            if meses == -1:
+                messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
+                return
+            if meses == -2:
+                messagebox.showwarning("Datos insuficientes", "No hay suficientes registros para realizar bien el análisis")
+                return
+            figura = Figure(figsize=(5, 4), dpi=0)
+            graficar = figura.add_subplot(111)
+            graficar.plot(meses, valores)
+            graficar.set_title("Evolución precio {}".format(producto))
+            canvas = FigureCanvasTkAgg(figura, master=self.grafico)
+            canvas.draw()
+            canvas.get_tk_widget().pack()
+
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Gráficos")
+        self.grafico = ttk.Frame(frame, cursor="heart")
+        self.grafico.place(rely=0.2, relx=0.11, relwidth=0.78, relheight=0.76)
+        boton = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
+        boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
+        self.entrada_producto = ttk.Combobox(frame, values=lista(), state="readonly", width=30)
+        self.entrada_producto.place(rely=0.13, relx=0.11, relheight=0.04, relwidth=0.15)
+        boton = ttk.Button(frame, text="impuestos")
+        boton.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
+        boton = ttk.Button(frame, text="Gasto")
+        boton.place(rely=0.05, relx=0.63, relheight=0.07, relwidth=0.15)
 
     # -------------------------
     # TAB: Revisión de Gastos Mensuales
