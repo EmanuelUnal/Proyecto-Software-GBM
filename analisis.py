@@ -299,17 +299,17 @@ def historial_productos(producto):
     for fila in filas:
         match mes_exacto(fila[2]):
             case 1:
-                precio1[fila[1]] = (fila[6], fila[2])
+                precio1[fila[0]] = (fila[6], fila[2])
             case 2:
-                precio2[fila[1]] = (fila[6], fila[2])
+                precio2[fila[0]] = (fila[6], fila[2])
             case 3:
-                precio3[fila[1]] = (fila[6], fila[2])
+                precio3[fila[0]] = (fila[6], fila[2])
             case 4:
-                precio4[fila[1]] = (fila[6], fila[2])
+                precio4[fila[0]] = (fila[6], fila[2])
             case 5:
-                precio5[fila[1]] = (fila[6], fila[2])
+                precio5[fila[0]] = (fila[6], fila[2])
             case 6:
-                precio6[fila[1]] = (fila[6], fila[2])
+                precio6[fila[0]] = (fila[6], fila[2])
             case _:
                 pass
     mes1, val1 = precio_mes(precio1)
@@ -318,33 +318,33 @@ def historial_productos(producto):
     mes4, val4 = precio_mes(precio4)
     mes5, val5 = precio_mes(precio5)
     mes6, val6 = precio_mes(precio6)
-    if(mes1 == None and
-       mes2 == None and
-       mes3 == None and
-       mes4 == None and
-       mes5 == None and
-       mes6 == None): return -1, -1
+    if(mes1 == 0 and
+       mes2 == 0 and
+       mes3 == 0 and
+       mes4 == 0 and
+       mes5 == 0 and
+       mes6 == 0): return -1, -1
     
     meses = []
     valores = []
-    if mes1 != None: 
-        meses.append(mes1)
-        valores.append(val1)
-    if mes2 != None: 
-        meses.append(mes2)
-        valores.append(val2)
-    if mes3 != None: 
-        meses.append(mes3)
-        valores.append(val3)
-    if mes4 != None: 
-        meses.append(mes4)
-        valores.append(val4)
-    if mes5 != None: 
-        meses.append(mes5)
-        valores.append(val5)
-    if mes6 != None: 
+    if mes6 != 0: 
         meses.append(mes6)
         valores.append(val6)
+    if mes5 != 0: 
+        meses.append(mes5)
+        valores.append(val5)
+    if mes4 != 0: 
+        meses.append(mes4)
+        valores.append(val4)
+    if mes3 != 0: 
+        meses.append(mes3)
+        valores.append(val3)
+    if mes1 != 0: 
+        meses.append(mes2)
+        valores.append(val2)
+    if mes1 != 0: 
+        meses.append(mes1)
+        valores.append(val1)
     if len(meses) < 2: return -2, -2
     return meses, valores
 
