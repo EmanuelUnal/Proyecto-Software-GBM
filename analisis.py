@@ -339,7 +339,7 @@ def historial_productos(producto):
     if mes3 != 0: 
         meses.append(mes3)
         valores.append(val3)
-    if mes1 != 0: 
+    if mes2 != 0: 
         meses.append(mes2)
         valores.append(val2)
     if mes1 != 0: 
