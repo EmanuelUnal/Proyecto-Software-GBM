@@ -590,6 +590,8 @@ class SistemaContableApp:
             conexion.close()
             return sorted([fila[0] for fila in filas])
         def grafico_producto():
+            for widget in self.grafico.winfo_children():
+                widget.destroy()
             producto = self.entrada_producto.get().strip()
             if producto == "":
                 messagebox.showwarning("Producto vacío", "Debe indicar qué producto desea analizar")
@@ -605,7 +607,7 @@ class SistemaContableApp:
             if meses == -2:
                 messagebox.showwarning("Datos insuficientes", "No hay suficientes registros para realizar bien el análisis")
                 return
-            figura = Figure(figsize=(5, 4), dpi=0)
+            figura = Figure(figsize=(5, 4), dpi=100)
             graficar = figura.add_subplot(111)
             graficar.plot(meses, valores)
             graficar.set_title("Evolución precio {}".format(producto))
@@ -615,7 +617,7 @@ class SistemaContableApp:
 
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
-        self.grafico = ttk.Frame(frame, cursor="heart")
+        self.grafico = ttk.Frame(frame)
         self.grafico.place(rely=0.2, relx=0.11, relwidth=0.78, relheight=0.76)
         boton = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
         boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
@@ -637,6 +639,8 @@ class SistemaContableApp:
 
         filter_box = ttk.LabelFrame(frame, text="Filtros", padding=6)
         filter_box.grid(row=1, column=0, sticky="ew", padx=10, pady=(0,8))
+        for item in self.productos_table.get_children():
+            self.productos_table.delete(item)
         filter_box.grid_columnconfigure(6, weight=1)
 
         ttk.Label(filter_box, text="Proveedor:").grid(row=0, column=0, padx=6, pady=4, sticky="e")
