@@ -617,8 +617,8 @@ class SistemaContableApp:
 
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
-        self.grafico = ttk.Frame(frame)
-        self.grafico.place(rely=0.2, relx=0.11, relwidth=0.78, relheight=0.76)
+        self.grafico = ttk.Label(frame, background="WHITE")
+        self.grafico.place(rely=0.2, relwidth=1, relheight=0.80)
         boton = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
         boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
         self.entrada_producto = ttk.Combobox(frame, values=lista(), state="readonly", width=30)
