@@ -103,7 +103,16 @@ def precio_mes(dic):
         case _:mes = None
     return mes, precio
 
+def gasto_total(tupla: tuple, mes:int, ano:int):
+    lista = []
+    fechastr = tupla[2]
+    fecha = fechastr.split("-")
+    if int(fecha[0]) == ano and int(fecha[1]) == mes:
+        lista.append(aumento(tupla[4] * tupla[6], tupla[7]))
+    return sum(lista)
+    
 
+#(1, 'AgroSupply', '2025-10-01', 'Fertilizante', 10, 'Agroquímico', 25000.0, 19.0, 0.0, 297500.0, 'FE0001', 'PD001', 250000.0, 297500.0)
 def recomendacion(producto: str):
     tabla = Path(__file__).with_name("contabilidad_lechera.db")
 
@@ -347,5 +356,52 @@ def historial_productos(producto):
         valores.append(val1)
     if len(meses) < 2: return -2, -2
     return meses, valores
+
+def historial_gasto():
+    tabla = Path(__file__).with_name("contabilidad_lechera.db")
+    conexion = sqlite3.connect(tabla)
+    cursor = conexion.cursor()
+    cursor.execute("SELECT * FROM facturas")
+    filas = cursor.fetchall()
+    conexion.close()
+    if not filas:
+        return 0, 0
+    mes_actual = datetime.now().month
+    ano_actual=datetime.now().year
+    hace_seis = mes_actual - 6
+    meses = []
+    valores = []
+    for i in range(hace_seis, mes_actual + 1):
+        mes = i
+        ano = ano_actual
+        if mes <= 0:
+            mes += 12
+            ano -= 1
+        match mes:
+            case 1:mesi = "ENE"
+            case 2:mesi = "FEB"
+            case 3:mesi = "MAR"
+            case 4:mesi = "ABR"
+            case 5:mesi = "MAY"
+            case 6:mesi = "JUN"
+            case 7:mesi = "JUL"
+            case 8:mesi = "AGO"
+            case 9:mesi = "SEP"
+            case 10:mesi = "OCT"
+            case 11:mesi = "NOV"
+            case 12:mesi = "DIC"
+            case _:mesi = None
+        valor = 0
+        for fila in filas:
+            valor += gasto_total(fila, mes, ano)
+        if valor == 0:
+            continue
+        meses.append(mesi)
+        valores.append(valor)
+    if len(meses) <= 1:
+        return -1, -1
+    return meses, valores
+    
+historial_gasto()
 
 #(1, 'AgroSupply', '2025-10-01', 'Fertilizante', 10, 'Agroquímico', 25000.0, 19.0, 0.0, 297500.0, 'FE0001', 'PD001', 250000.0, 297500.0)
