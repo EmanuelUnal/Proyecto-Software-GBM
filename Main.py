@@ -638,6 +638,27 @@ class SistemaContableApp:
             canvas.draw()
             canvas.get_tk_widget().pack()
 
+        def grafico_impuesto():
+            for widget in self.grafico.winfo_children():
+                widget.destroy()          
+            meses, valores = analisis.historial_impuesto()
+            if meses == 0:
+                messagebox.showerror("No hay datos", "No hay registros para analizar")
+                return
+            if meses == -1:
+                messagebox.showwarning("Datos insuficientes", "No hay suficientes registros para realizar bien el análisis")
+                return
+            figura = Figure(figsize=(5, 4), dpi=100)
+            graficar = figura.add_subplot(111)
+            graficar.plot(meses, valores)
+            graficar.set_title("Historial de gastos")
+            graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
+            graficar.yaxis.set_major_formatter(
+                mticker.FuncFormatter(lambda x, pos: f"{x/1_000_000:.1f}M$"))
+            canvas = FigureCanvasTkAgg(figura, master=self.grafico)
+            canvas.draw()
+            canvas.get_tk_widget().pack()
+
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
         self.grafico = ttk.Label(frame, background="WHITE")
@@ -646,7 +667,7 @@ class SistemaContableApp:
         boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
         self.entrada_producto = ttk.Combobox(frame, values=lista(), state="readonly", width=30)
         self.entrada_producto.place(rely=0.13, relx=0.11, relheight=0.04, relwidth=0.15)
-        boton = ttk.Button(frame, text="impuestos")
+        boton = ttk.Button(frame, text="impuestos", command=grafico_impuesto)
         boton.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
         boton = ttk.Button(frame, text="Gasto", command=grafico_gastos)
         boton.place(rely=0.05, relx=0.63, relheight=0.07, relwidth=0.15)
