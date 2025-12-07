@@ -59,6 +59,7 @@ def diferencial(V1: tuple, V2:tuple):
 
 def aumento(valor:float, recargo:float): return valor + valor * recargo / 100
 
+def recargo(valor:float, recargo:float): return valor * recargo / 100
 def crece1(d:float):
     if d < 0: return "*El precio está decreciendo en\nuna tasa de ${} al mes".format(round(abs(d),1))
     elif d == 0: return "*El precio se mantiene constante"
@@ -103,7 +104,22 @@ def precio_mes(dic):
         case _:mes = None
     return mes, precio
 
-
+def gasto_total(tupla: tuple, mes:int, ano:int):
+    lista = []
+    fechastr = tupla[2]
+    fecha = fechastr.split("-")
+    if int(fecha[0]) == ano and int(fecha[1]) == mes:
+        lista.append(aumento(tupla[4] * tupla[6], tupla[7]))
+    return sum(lista)
+    
+def gasto_fiscal(tupla: tuple, mes:int, ano:int):
+    lista = []
+    fechastr = tupla[2]
+    fecha = fechastr.split("-")
+    if int(fecha[0]) == ano and int(fecha[1]) == mes:
+        lista.append(recargo(tupla[4] * tupla[6], tupla[7]))
+    return sum(lista)
+#(1, 'AgroSupply', '2025-10-01', 'Fertilizante', 10, 'Agroquímico', 25000.0, 19.0, 0.0, 297500.0, 'FE0001', 'PD001', 250000.0, 297500.0)
 def recomendacion(producto: str):
     tabla = Path(__file__).with_name("contabilidad_lechera.db")
 
@@ -299,17 +315,17 @@ def historial_productos(producto):
     for fila in filas:
         match mes_exacto(fila[2]):
             case 1:
-                precio1[fila[1]] = (fila[6], fila[2])
+                precio1[fila[0]] = (fila[6], fila[2])
             case 2:
-                precio2[fila[1]] = (fila[6], fila[2])
+                precio2[fila[0]] = (fila[6], fila[2])
             case 3:
-                precio3[fila[1]] = (fila[6], fila[2])
+                precio3[fila[0]] = (fila[6], fila[2])
             case 4:
-                precio4[fila[1]] = (fila[6], fila[2])
+                precio4[fila[0]] = (fila[6], fila[2])
             case 5:
-                precio5[fila[1]] = (fila[6], fila[2])
+                precio5[fila[0]] = (fila[6], fila[2])
             case 6:
-                precio6[fila[1]] = (fila[6], fila[2])
+                precio6[fila[0]] = (fila[6], fila[2])
             case _:
                 pass
     mes1, val1 = precio_mes(precio1)
@@ -318,34 +334,125 @@ def historial_productos(producto):
     mes4, val4 = precio_mes(precio4)
     mes5, val5 = precio_mes(precio5)
     mes6, val6 = precio_mes(precio6)
-    if(mes1 == None and
-       mes2 == None and
-       mes3 == None and
-       mes4 == None and
-       mes5 == None and
-       mes6 == None): return -1, -1
+    if(mes1 == 0 and
+       mes2 == 0 and
+       mes3 == 0 and
+       mes4 == 0 and
+       mes5 == 0 and
+       mes6 == 0): return -1, -1
     
     meses = []
     valores = []
-    if mes1 != None: 
-        meses.append(mes1)
-        valores.append(val1)
-    if mes2 != None: 
-        meses.append(mes2)
-        valores.append(val2)
-    if mes3 != None: 
-        meses.append(mes3)
-        valores.append(val3)
-    if mes4 != None: 
-        meses.append(mes4)
-        valores.append(val4)
-    if mes5 != None: 
-        meses.append(mes5)
-        valores.append(val5)
-    if mes6 != None: 
+    if mes6 != 0: 
         meses.append(mes6)
         valores.append(val6)
+    if mes5 != 0: 
+        meses.append(mes5)
+        valores.append(val5)
+    if mes4 != 0: 
+        meses.append(mes4)
+        valores.append(val4)
+    if mes3 != 0: 
+        meses.append(mes3)
+        valores.append(val3)
+    if mes2 != 0: 
+        meses.append(mes2)
+        valores.append(val2)
+    if mes1 != 0: 
+        meses.append(mes1)
+        valores.append(val1)
     if len(meses) < 2: return -2, -2
     return meses, valores
+
+def historial_gasto():
+    tabla = Path(__file__).with_name("contabilidad_lechera.db")
+    conexion = sqlite3.connect(tabla)
+    cursor = conexion.cursor()
+    cursor.execute("SELECT * FROM facturas")
+    filas = cursor.fetchall()
+    conexion.close()
+    if not filas:
+        return 0, 0
+    mes_actual = datetime.now().month
+    ano_actual=datetime.now().year
+    hace_seis = mes_actual - 6
+    meses = []
+    valores = []
+    for i in range(hace_seis, mes_actual + 1):
+        mes = i
+        ano = ano_actual
+        if mes <= 0:
+            mes += 12
+            ano -= 1
+        match mes:
+            case 1:mesi = "ENE"
+            case 2:mesi = "FEB"
+            case 3:mesi = "MAR"
+            case 4:mesi = "ABR"
+            case 5:mesi = "MAY"
+            case 6:mesi = "JUN"
+            case 7:mesi = "JUL"
+            case 8:mesi = "AGO"
+            case 9:mesi = "SEP"
+            case 10:mesi = "OCT"
+            case 11:mesi = "NOV"
+            case 12:mesi = "DIC"
+            case _:mesi = None
+        valor = 0
+        for fila in filas:
+            valor += gasto_total(fila, mes, ano)
+        if valor == 0:
+            continue
+        meses.append(mesi)
+        valores.append(valor)
+    if len(meses) <= 1:
+        return -1, -1
+    return meses, valores
+
+def historial_impuesto():
+    tabla = Path(__file__).with_name("contabilidad_lechera.db")
+    conexion = sqlite3.connect(tabla)
+    cursor = conexion.cursor()
+    cursor.execute("SELECT * FROM facturas")
+    filas = cursor.fetchall()
+    conexion.close()
+    if not filas:
+        return 0, 0
+    mes_actual = datetime.now().month
+    ano_actual=datetime.now().year
+    hace_seis = mes_actual - 6
+    meses = []
+    valores = []
+    for i in range(hace_seis, mes_actual + 1):
+        mes = i
+        ano = ano_actual
+        if mes <= 0:
+            mes += 12
+            ano -= 1
+        match mes:
+            case 1:mesi = "ENE"
+            case 2:mesi = "FEB"
+            case 3:mesi = "MAR"
+            case 4:mesi = "ABR"
+            case 5:mesi = "MAY"
+            case 6:mesi = "JUN"
+            case 7:mesi = "JUL"
+            case 8:mesi = "AGO"
+            case 9:mesi = "SEP"
+            case 10:mesi = "OCT"
+            case 11:mesi = "NOV"
+            case 12:mesi = "DIC"
+            case _:mesi = None
+        valor = 0
+        for fila in filas:
+            valor += gasto_fiscal(fila, mes, ano)
+        if valor == 0:
+            continue
+        meses.append(mesi)
+        valores.append(valor)
+    if len(meses) <= 1:
+        return -1, -1
+    return meses, valores
+historial_gasto()
 
 #(1, 'AgroSupply', '2025-10-01', 'Fertilizante', 10, 'Agroquímico', 25000.0, 19.0, 0.0, 297500.0, 'FE0001', 'PD001', 250000.0, 297500.0)
