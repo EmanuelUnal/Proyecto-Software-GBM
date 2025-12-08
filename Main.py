@@ -683,8 +683,12 @@ class SistemaContableApp:
 
         filter_box = ttk.LabelFrame(frame, text="Filtros", padding=6)
         filter_box.grid(row=1, column=0, sticky="ew", padx=10, pady=(0,8))
-        for item in self.productos_table.get_children():
-            self.productos_table.delete(item)
+        # Si existe una tabla previa de productos, destruirla para evitar referencias inválidas
+        if hasattr(self, "productos_table") and isinstance(self.productos_table, ttk.Treeview):
+            try:
+                self.productos_table.destroy()
+            except Exception:
+                pass
         filter_box.grid_columnconfigure(6, weight=1)
 
         ttk.Label(filter_box, text="Proveedor:").grid(row=0, column=0, padx=6, pady=4, sticky="e")
