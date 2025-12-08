@@ -1,13 +1,21 @@
 import sqlite3
 import tkinter as tk
 import analisis
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.ticker as mticker
 import sys, os
+import shutil
+
+# Try to import Pillow for better image support (JPEG, PNG); fall back to Tk PhotoImage for limited types.
+try:
+    from PIL import Image, ImageTk
+    _HAS_PIL = True
+except Exception:
+    _HAS_PIL = False
 
 
 def resource_path(relative_path: str) -> str:
@@ -53,16 +61,27 @@ class LoginApp:
         self.show_login()
 
     def _ensure_tables(self):
-        # Tabla de usuarios
+        # Tabla de usuarios: create with firma column
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
                 documento TEXT PRIMARY KEY,
                 nombre TEXT NOT NULL,
                 correo TEXT NOT NULL,
                 contrasena TEXT NOT NULL,
-                rol TEXT NOT NULL
+                rol TEXT NOT NULL,
+                firma TEXT DEFAULT ''
             )
         """)
+        # If DB existed before without 'firma', add the column
+        self.cursor.execute("PRAGMA table_info(usuarios)")
+        cols = [row[1] for row in self.cursor.fetchall()]
+        if 'firma' not in cols:
+            try:
+                self.cursor.execute("ALTER TABLE usuarios ADD COLUMN firma TEXT DEFAULT ''")
+            except Exception:
+                # If alter fails for any reason, ignore; table still usable but without firma
+                pass
+
         # Tabla de facturas
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS facturas (
@@ -216,8 +235,8 @@ class LoginApp:
         if self.cursor.fetchone():
             messagebox.showerror("Error", "Documento ya registrado")
             return
-        self.cursor.execute("INSERT INTO usuarios (documento, nombre, correo, contrasena, rol) VALUES (?, ?, ?, ?, ?)",
-                            (doc, nombre, correo, pw1, rol))
+        self.cursor.execute("INSERT INTO usuarios (documento, nombre, correo, contrasena, rol, firma) VALUES (?, ?, ?, ?, ?, ?)",
+                    (doc, nombre, correo, pw1, rol, ""))
         self.con.commit()
         messagebox.showinfo("Éxito", f"Usuario registrado como {rol}")
         self.show_login()
@@ -228,7 +247,7 @@ class LoginApp:
         if not doc or not pw:
             messagebox.showwarning("Faltan datos", "Documento y contraseña son obligatorios")
             return
-        self.cursor.execute("SELECT documento, nombre, correo, contrasena, rol FROM usuarios WHERE documento = ?", (doc,))
+        self.cursor.execute("SELECT documento, nombre, correo, contrasena, rol, firma FROM usuarios WHERE documento = ?", (doc,))
         row = self.cursor.fetchone()
         if not row:
             messagebox.showerror("Error", "Documento no registrado")
@@ -236,7 +255,7 @@ class LoginApp:
         if pw != row[3]:
             messagebox.showerror("Error", "Contraseña incorrecta")
             return
-        usuario = {"documento": row[0], "nombre": row[1], "correo": row[2], "rol": row[4]}
+        usuario = {"documento": row[0], "nombre": row[1], "correo": row[2], "rol": row[4], "firma": row[5] if len(row) > 5 else ""}
         self.launch_system(usuario)
 
     def launch_system(self, usuario):
@@ -284,6 +303,7 @@ class SistemaContableApp:
         if rol == "Auxiliar Contable":
             self.crear_tab_factura()
             self.crear_tab_generar_pedido()
+            self.crear_tab_firma()
         elif rol == "Contadora":
             self.crear_tab_analisis()
             self.crear_tab_graf()
@@ -312,17 +332,50 @@ class SistemaContableApp:
 
         # Hago 3 cajas: formulario, tabla y códigos/acciones
         form_box = ttk.LabelFrame(frame, text="Agregar Producto", padding=8)
-        form_box.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
+        form_box.grid(row=0, column=0, sticky="w", padx=10, pady=(10,6))
+
+        # --- Tabla de productos agregados (tabla temporal) dentro de un contenedor de ancho fijo ---
+        columnas = ("producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort")
+
+        # contenedor con ancho fijo para limitar la tabla temporal
+        factura_holder = ttk.Frame(frame, width=420)
+        factura_holder.grid(row=0, column=1, rowspan=1, padx=10, pady=10, sticky="ns")
+        factura_holder.grid_propagate(False)   # evita que el contenido cambie el ancho
+
+        # Treeview dentro del holder
+        self.factura_table = ttk.Treeview(factura_holder, columns=columnas, show="headings", height=4)
+        self.factura_table.heading("producto", text="Producto")
+        self.factura_table.heading("cantidad", text="Cantidad")
+        self.factura_table.heading("concepto", text="Concepto")
+        self.factura_table.heading("valoru", text="ValorU")
+        self.factura_table.heading("iva", text="Iva (%)")
+        self.factura_table.heading("retencion", text="Retención")
+        self.factura_table.heading("valort", text="ValorT")
+
+        # columnas: ajustar anchos para que la tabla quede compacta
+        self.factura_table.column("producto", width=240, anchor="w")
+        self.factura_table.column("cantidad", width=105, anchor="center")
+        self.factura_table.column("concepto", width=210, anchor="w")
+        self.factura_table.column("valoru", width=135, anchor="e")
+        self.factura_table.column("iva", width=60, anchor="center")
+        self.factura_table.column("retencion", width=80, anchor="e")
+        self.factura_table.column("valort", width=135, anchor="e")
+
+        # llenar el holder sin que se expanda horizontalmente en el grid principal
+        self.factura_table.pack(fill="both", expand=True)
 
         table_box = ttk.LabelFrame(frame, text="Productos en la Factura", padding=6)
-        table_box.grid(row=1, column=0, sticky="nsew", padx=10, pady=6)
+        table_box.grid(row=2, column=0,columnspan=2, sticky="nsew", padx=10, pady=6)
 
         codes_box = ttk.LabelFrame(frame, text="Códigos y Acciones", padding=8)
-        codes_box.grid(row=2, column=0, sticky="ew", padx=10, pady=(6,10))
+        codes_box.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(6,10))
 
-        # permitir que la tabla crezca cuando la ventana cambie de tamaño
-        frame.grid_rowconfigure(1, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
+        # Ajustes de pesos del layout: dejar la columna derecha sin peso (fija) y dar espacio a la izquierda
+        frame.grid_rowconfigure(0, weight=0)
+        frame.grid_rowconfigure(1, weight=0)
+        frame.grid_rowconfigure(2, weight=1)   # tabla principal (table_box) sí crece
+        frame.grid_columnconfigure(0, weight=1)  # formulario / columna izquierda puede crecer
+        frame.grid_columnconfigure(1, weight=0)  # columna del holder queda fija
         table_box.grid_rowconfigure(0, weight=1)
         table_box.grid_columnconfigure(0, weight=1)
 
@@ -359,6 +412,14 @@ class SistemaContableApp:
         self.entry_retencion = ttk.Entry(form_box)
         self.entry_retencion.grid(row=3, column=3, sticky="w", padx=6, pady=4)
 
+        # Botones para armar la factura (agregar item temporal y guardar factura)
+        btn_frame_fact = ttk.Frame(form_box)
+        btn_frame_fact.grid(row=4, column=0, columnspan=4, pady=6)
+        ttk.Button(btn_frame_fact, text="Agregar Producto", command=self.agregar_producto_a_factura_table).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btn_frame_fact, text="Guardar Factura", command=self.guardar_factura).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btn_frame_fact, text="Limpiar Items", command=lambda: [self.factura_table.delete(i) for i in self.factura_table.get_children()]).pack(side=tk.LEFT, padx=6)
+
+
         # Tabla en table_box — permite expansión y columnas con ancho por defecto
         columns = ("proveedor", "fecha", "producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort", "codigo_factura", "codigo_pedido")
         self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=10)
@@ -394,6 +455,179 @@ class SistemaContableApp:
 
         ttk.Button(codes_box, text="Agregar Producto", command=self.agregar_producto).grid(row=0, column=4, padx=10, pady=4)#agrega la factura a la base de datos
 
+    def crear_tab_firma(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Firma")
+
+        ttk.Label(frame, text="Subir / Ver firma digital", font=("Segoe UI", 12)).pack(padx=10, pady=(10,6), anchor="center")
+
+        # Area to display signature image
+        self.firma_canvas_holder = ttk.Frame(frame, padding=8)
+        self.firma_canvas_holder.pack(fill="both", expand=False, padx=10, pady=6)
+
+        self.firma_label = ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.")
+        self.firma_label.pack()
+
+        btns = ttk.Frame(frame)
+        btns.pack(padx=10, pady=8, anchor="center")
+
+        ttk.Button(btns, text="Seleccionar archivo de firma", command=self._seleccionar_y_guardar_firma).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btns, text="Mostrar firma actual", command=self._mostrar_firma_actual).pack(side=tk.LEFT, padx=6)
+
+        # Try to display current signature if exists
+        self._mostrar_firma_actual()
+
+    def _seleccionar_y_guardar_firma(self):
+        # Abrir dialogo para seleccionar imagen
+        filetypes = [("Imagen", "*.png;*.jpg;*.jpeg;*.gif;*.bmp"), ("PNG", "*.png"), ("JPG", "*.jpg;*.jpeg"), ("GIF", "*.gif")]
+        path = filedialog.askopenfilename(title="Seleccionar archivo de firma", filetypes=filetypes)
+        if not path:
+            return
+
+        try:
+            src = Path(path)
+            app_dir = Path(__file__).parent
+            # avoid collisions: prefix with documento to avoid overwriting different users' files
+            stored_name = f"{self.usuario['documento']}_{src.name}"
+            dst = app_dir / stored_name
+            shutil.copy(src, dst)
+
+            # Save filename in DB for this user
+            self.cursor.execute("UPDATE usuarios SET firma = ? WHERE documento = ?", (stored_name, self.usuario['documento']))
+            self.con.commit()
+            # Update in-memory usuario
+            self.usuario['firma'] = stored_name
+
+            messagebox.showinfo("Éxito", f"Firma guardada como {stored_name}")
+            self._mostrar_firma_actual()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar la firma:\n{e}")
+
+    def _mostrar_firma_actual(self):
+        # Clear previous widgets in holder
+        for w in self.firma_canvas_holder.winfo_children():
+            w.destroy()
+
+        firma_fname = self.usuario.get('firma', '') if isinstance(self.usuario, dict) else ""
+        if not firma_fname:
+            ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.").pack()
+            return
+
+        app_dir = Path(__file__).parent
+        img_path = app_dir / firma_fname
+        if not img_path.exists():
+            ttk.Label(self.firma_canvas_holder, text="Archivo de firma no encontrado.").pack()
+            return
+
+        try:
+            if _HAS_PIL:
+                img = Image.open(img_path)
+                # Resize to fit nicely in UI if large
+                max_w, max_h = 400, 200
+                img.thumbnail((max_w, max_h))
+                self._firma_photo = ImageTk.PhotoImage(img)
+            else:
+                # fallback: Tk PhotoImage supports PNG/GIF; may fail on JPG
+                self._firma_photo = tk.PhotoImage(file=str(img_path))
+            lbl = ttk.Label(self.firma_canvas_holder, image=self._firma_photo)
+            lbl.image = self._firma_photo
+            lbl.pack()
+        except Exception as e:
+            ttk.Label(self.firma_canvas_holder, text=f"No se pudo mostrar la firma: {e}").pack()
+
+    def agregar_producto_a_factura_table(self):
+        producto = self.entry_producto.get().strip()
+        cantidad_s = self.entry_cantidad.get().strip()
+        concepto = self.entry_concepto.get().strip()
+        valoru_s = self.entry_valoru.get().strip()
+        iva_s = self.entry_iva.get().strip()
+        retencion_s = self.entry_retencion.get().strip()
+
+        if not producto or not cantidad_s or not valoru_s:
+            messagebox.showwarning("Faltan datos", "Producto, Cantidad y ValorU son obligatorios.")
+            return
+        try:
+            cantidad = int(cantidad_s)
+            valoru = float(valoru_s)
+            iva = float(iva_s) if iva_s else 0.0
+            retencion = float(retencion_s) if retencion_s else 0.0
+        except Exception:
+            messagebox.showerror("Error", "Cantidad debe ser entero. ValorU, Iva y Retención numéricos.")
+            return
+        if cantidad < 0 or valoru < 0:
+            messagebox.showerror("Error", "Cantidad y ValorU deben ser >= 0.")
+            return
+
+        subtotal = cantidad * valoru
+        valort = subtotal * (1 + iva / 100.0) 
+
+        values = (producto, cantidad, concepto, valoru, iva, retencion, valort)
+        self.factura_table.insert("", "end", values=values)
+
+        # Limpiar campos del item (pero no proveedor/fecha/códigos)
+        self.entry_producto.delete(0, tk.END)
+        self.entry_cantidad.delete(0, tk.END)
+        self.entry_concepto.delete(0, tk.END)
+        self.entry_valoru.delete(0, tk.END)
+        self.entry_iva.delete(0, tk.END)
+        self.entry_retencion.delete(0, tk.END)
+
+    def guardar_factura(self):
+        proveedor = self.entry_proveedor.get().strip()
+        fecha = self.entry_fecha.get().strip()
+        codigo_fact = self.entry_codigo_factura.get().strip()
+        codigo_ped = self.entry_codigo_pedido.get().strip()
+
+        if not proveedor or not fecha or not codigo_fact:
+            messagebox.showerror("Error", "Proveedor, Fecha y Código de factura son obligatorios para guardar.")
+            return
+        try:
+            datetime.strptime(fecha, "%Y-%m-%d")
+        except Exception:
+            messagebox.showerror("Error", "Fecha inválida. Use formato YYYY-MM-DD.")
+            return
+
+        items = self.factura_table.get_children()
+        if not items:
+            messagebox.showwarning("Sin ítems", "Agrega al menos un producto a la factura.")
+            return
+
+        try:
+            for item in items:
+                producto, cantidad, concepto, valoru, iva, retencion, valort = self.factura_table.item(item, "values")
+                # convertir tipos correctamente
+                cantidad = int(cantidad)
+                valoru = float(valoru)
+                iva = float(iva)
+                retencion = float(retencion)
+                subtotal = cantidad * valoru
+                total = float(valort)
+
+                self.cursor.execute("""
+                    INSERT INTO facturas (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_factura, codigo_pedido, subtotal, total)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (proveedor, fecha, producto, cantidad, concepto, valoru, iva, retencion, valort, codigo_fact, codigo_ped, subtotal, total))
+            self.con.commit()
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudo guardar la factura:\n{e}")
+            return
+
+        # Añadir visualmente todos los ítems a la tabla principal de facturas
+        for item in items:
+            producto, cantidad, concepto, valoru, iva, retencion, valort = self.factura_table.item(item, "values")
+            vals = (proveedor, fecha, producto, int(cantidad), concepto, float(valoru), float(iva), float(retencion), float(valort), codigo_fact, codigo_ped)
+            self.productos_table.insert("", "end", values=vals)
+
+        # Limpiar tabla temporal y entradas de códigos (pero mantener proveedor/fecha si quieres)
+        for item in items:
+            self.factura_table.delete(item)
+
+        # Opcional: limpiar códigos si prefieres
+        # self.entry_codigo_factura.delete(0, tk.END)
+        # self.entry_codigo_pedido.delete(0, tk.END)
+
+        messagebox.showinfo("Factura guardada", f"Factura {codigo_fact} guardada con {len(items)} ítems.")
+        
     def agregar_producto(self):
         # Leer campos
         proveedor = self.entry_proveedor.get().strip()
@@ -740,12 +974,6 @@ class SistemaContableApp:
 
         facturas = self.cargar_facturas()
         self._refresh_productos_table(facturas)
-        for f in facturas:
-            try:
-                iid = str(f[13])
-            except Exception:
-                iid = None
-            self.productos_table.insert("", "end", iid=iid, values=f[:11])
 
     def _on_edit_product(self, event):
         """Handler para doble click: abre ventana de edición para la fila cliqueada."""
@@ -867,12 +1095,17 @@ class SistemaContableApp:
         for item in self.productos_table.get_children():
             self.productos_table.delete(item)
         for f in facturas:
-
             try:
-                iid = str(f[13]) if f and len(f) > 13 and f[13] is not None else ""
+                raw_id = f[13] if f and len(f) > 13 else None
+                iid = str(raw_id) if raw_id is not None else None
             except Exception:
-                iid = ""
-            self.productos_table.insert("", "end", iid=iid, values=f[:11])
+                iid = None
+
+            # Si hay un iid válido lo usamos; si no, dejamos que Tk lo genere (no pasar iid)
+            if iid:
+                self.productos_table.insert("", "end", iid=iid, values=f[:11])
+            else:
+                self.productos_table.insert("", "end", values=f[:11])
 
     def filtrar_gastos(self):
         """Aplica los filtros ingresados y refresca la tabla."""
