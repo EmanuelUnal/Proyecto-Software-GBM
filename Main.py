@@ -723,6 +723,7 @@ class SistemaContableApp:
     # TAB: Análisis
     # -------------------------
     def crear_tab_analisis(self):
+#-----------Obtener productos de la base de datos-----------
         def lista():
             tabla = Path(__file__).with_name("contabilidad_lechera.db")
             conexion = sqlite3.connect(tabla)
@@ -731,7 +732,8 @@ class SistemaContableApp:
             filas = cursor.fetchall()
             conexion.close()
             return sorted([fila[0] for fila in filas])
-
+        
+#-----Analizar comportamiento del precio de un producto--------
         def ana_productos():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -744,10 +746,11 @@ class SistemaContableApp:
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
-            r7.config(text=a)
-            r8.config(text=b)
-            r9.config(text=c)
-        
+            r7.config(text=a, background="WHITE")
+            r8.config(text=b, background="WHITE")
+            r9.config(text=c, background="WHITE")
+
+ #--------------Analizar posible proveedores-------------       
         def proveedores():
             producto_pro = self.entrada_pro.get().strip()
             if producto_pro == "":
@@ -760,63 +763,81 @@ class SistemaContableApp:
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
-            r1.config(text=a)
-            r2.config(text=b)
-            r3.config(text=c)
+            r1.config(text=a, background="WHITE")
+            r2.config(text=b, background="WHITE")
+            r3.config(text=c, background="WHITE")
 
+#--------------Análisis general de los gastos-----------------
         def general():
             (a,b,c) = analisis.general()
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin datos", "No hay datos que actualizar")
-            r4.config(text=a)
-            r5.config(text=b)
-            r6.config(text=c)
+            r4.config(text=a, background="WHITE")
+            r5.config(text=b, background="WHITE")
+            r6.config(text=c, background="WHITE")
+
+#---------------------Modelar la interfaz---------------------
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Análisis de Gastos")
 
         fb = ttk.LabelFrame(frame, text="Herramientas de análisis", padding=8)
-        fb.grid(row=0, column=0, sticky="ew", padx=10, pady=(10,6))
-        ttk.Label(fb, text="Escoger producto a evaluar").grid(row=0, column=1, padx=10, pady=5)
+        fb.place(rely=0.02, relwidth=1, relheight=1)
+        ttk.Label(fb, text="Escoger producto a evaluar:", anchor="center").place(rely=0.02, relx=0.4, relheight=0.04, relwidth=0.2)
         self.entrada_pro = ttk.Combobox(fb, values=lista(), state="readonly", width=30)
-        self.entrada_pro.grid(row=1, column=1, padx=10, pady=5)
+        self.entrada_pro.place(rely=0.08, relx=0.4, relheight=0.05, relwidth=0.2)
 
-        ttk.Label(fb, text="Empresas:").grid(row=2, column=0, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar", command=proveedores).grid(row=3, column=0, padx=10, pady=5)
+        ttk.Button(fb, text="Empresas", command=proveedores).place(rely=0.16, relx=0.13, relheight=0.07, relwidth=0.16)
 
-        ttk.Label(fb, text="General:").grid(row=2, column=1, padx=200, pady=5)
-        ttk.Button(fb, text="Evaluar", command=general).grid(row=3, column=1, padx=10, pady=5)
+        ttk.Button(fb, text="General", command=general).place(rely=0.16, relx=0.42, relheight=0.07, relwidth=0.16)
 
-        ttk.Label(fb, text="Producto:").grid(row=2, column=2, padx=10, pady=5)
-        ttk.Button(fb, text="Evaluar", command=ana_productos).grid(row=3, column=2, padx=10, pady=5)
-
-        ttk.Label(fb).grid(row=4, column=2, padx=10, pady=5)
-        ttk.Label(fb).grid(row=5, column=2, padx=10, pady=5)
-        ttk.Label(fb).grid(row=6, column=2, padx=10, pady=5)
+        ttk.Button(fb, text="Producto", command=ana_productos).place(rely=0.16, relx=0.71, relheight=0.07, relwidth=0.16)
         
-        r1 = ttk.Label(fb, text="Proveedor más barato")
-        r2 = ttk.Label(fb, text="Proveedor más confiable")
-        r3 = ttk.Label(fb, text="Proveedor con menor\naumento de precios")
-        r4 = ttk.Label(fb, text="Promedio de gastos en\nlos últimos tres meses")
-        r5 = ttk.Label(fb, text="Producto de mayor inversión")
-        r6 = ttk.Label(fb, text="Aumento del gasto en\ntres meses")
-        r7 = ttk.Label(fb, text="Precio actual")
-        r8 = ttk.Label(fb, text="Comportamiento en los\núltimos seis meses")
-        r9 = ttk.Label(fb, text="Posible comportamiento\nfuturo")
+        ttk.Label(fb, text="Proveedor más barato:", anchor="center").place(rely=0.25, relx=0.1, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Proveedor más confiable:", anchor="center").place(rely=0.5, relx=0.1, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Proveedor con menor\naumento de precios:", anchor="center").place(rely=0.75, relx=0.1, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Promedio de gastos en los\núltimos tres meses:", anchor="center").place(rely=0.25, relx=0.4, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Producto de mayor inversión:", anchor="center").place(rely=0.5, relx=0.4, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Aumento del gasto en tres meses:", anchor="center").place(rely=0.75, relx=0.4, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Precio actual:", anchor="center").place(rely=0.25, relx=0.7, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Comportamiento en los\núltimos seis meses:", anchor="center").place(rely=0.5, relx=0.7, relheight=0.08, relwidth=0.2)
+        ttk.Label(fb, text="Posible comportamiento futuro:", anchor="center").place(rely=0.75, relx=0.7, relheight=0.08, relwidth=0.2)
 
-        r1.grid(row=10, column=0, padx=10, pady=5)
-        r2.grid(row=11, column=0, padx=10, pady=5)
-        r3.grid(row=12, column=0, padx=10, pady=5)
-        r4.grid(row=10, column=1, padx=10, pady=5)
-        r5.grid(row=11, column=1, padx=10, pady=5)
-        r6.grid(row=12, column=1, padx=10, pady=5)
-        r7.grid(row=10, column=2, padx=10, pady=5)
-        r8.grid(row=11, column=2, padx=10, pady=5)
-        r9.grid(row=12, column=2, padx=10, pady=5)
+        r1 = ttk.Label(fb, anchor="center")
+        r2 = ttk.Label(fb, anchor="center")
+        r3 = ttk.Label(fb, anchor="center")
+        r4 = ttk.Label(fb, anchor="center")
+        r5 = ttk.Label(fb, anchor="center")
+        r6 = ttk.Label(fb, anchor="center")
+        r7 = ttk.Label(fb, anchor="center")
+        r8 = ttk.Label(fb, anchor="center")
+        r9 = ttk.Label(fb, anchor="center")
 
+        r1.place(rely=0.33, relx=0.1, relheight=0.17, relwidth=0.2)
+        r2.place(rely=0.58, relx=0.1, relheight=0.17, relwidth=0.2)
+        r3.place(rely=0.83, relx=0.1, relheight=0.17, relwidth=0.2)
+        r4.place(rely=0.33, relx=0.4, relheight=0.17, relwidth=0.2)
+        r5.place(rely=0.58, relx=0.4, relheight=0.17, relwidth=0.2)
+        r6.place(rely=0.83, relx=0.4, relheight=0.17, relwidth=0.2)
+        r7.place(rely=0.33, relx=0.7, relheight=0.17, relwidth=0.2)
+        r8.place(rely=0.58, relx=0.7, relheight=0.17, relwidth=0.2)
+        r9.place(rely=0.83, relx=0.7, relheight=0.17, relwidth=0.2)
+
+    """
+        r1.place(rely=0.25, relx=0.1, relheight=0.23, relwidth=0.2)
+        r2.place(rely=0.5, relx=0.1, relheight=0.23, relwidth=0.2)
+        r3.place(rely=0.75, relx=0.1, relheight=0.23, relwidth=0.2)
+        r4.place(rely=0.25, relx=0.4, relheight=0.23, relwidth=0.2)
+        r5.place(rely=0.5, relx=0.4, relheight=0.23, relwidth=0.2)
+        r6.place(rely=0.75, relx=0.4, relheight=0.23, relwidth=0.2)
+        r7.place(rely=0.25, relx=0.7, relheight=0.23, relwidth=0.2)
+        r8.place(rely=0.5, relx=0.7, relheight=0.23, relwidth=0.2)
+        r9.place(rely=0.75, relx=0.7, relheight=0.23, relwidth=0.2)
+    """
     #--------------------------
     #TAB: Gráficos
     #--------------------------
     def crear_tab_graf(self):
+#-----------Obtener productos de la base de datos-----------
         def lista():
             tabla = Path(__file__).with_name("contabilidad_lechera.db")
             conexion = sqlite3.connect(tabla)
@@ -826,6 +847,7 @@ class SistemaContableApp:
             conexion.close()
             return sorted([fila[0] for fila in filas])
         
+#-----------Mostrar gráfico del comportamiento de un producto-----------     
         def grafico_producto():
             for widget in self.grafico.winfo_children():
                 widget.destroy()
@@ -852,6 +874,7 @@ class SistemaContableApp:
             canvas.draw()
             canvas.get_tk_widget().pack()
         
+#-----------Mostrar un grafico de los gastos generales-----------     
         def grafico_gastos():
             for widget in self.grafico.winfo_children():
                 widget.destroy()          
@@ -873,6 +896,7 @@ class SistemaContableApp:
             canvas.draw()
             canvas.get_tk_widget().pack()
 
+#-----------Mostrar un gráfico de los impuestos pagados-----------     
         def grafico_impuesto():
             for widget in self.grafico.winfo_children():
                 widget.destroy()          
@@ -894,18 +918,19 @@ class SistemaContableApp:
             canvas.draw()
             canvas.get_tk_widget().pack()
 
+#-----------Modelar interfaz-----------
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
         self.grafico = ttk.Label(frame, background="WHITE")
         self.grafico.place(rely=0.2, relwidth=1, relheight=0.80)
-        boton = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
-        boton.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
+        boton1 = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
+        boton1.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
         self.entrada_producto = ttk.Combobox(frame, values=lista(), state="readonly", width=30)
         self.entrada_producto.place(rely=0.13, relx=0.11, relheight=0.04, relwidth=0.15)
-        boton = ttk.Button(frame, text="impuestos", command=grafico_impuesto)
-        boton.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
-        boton = ttk.Button(frame, text="Gasto", command=grafico_gastos)
-        boton.place(rely=0.05, relx=0.63, relheight=0.07, relwidth=0.15)
+        boton2 = ttk.Button(frame, text="Impuestos", command=grafico_impuesto)
+        boton2.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
+        boton3 = ttk.Button(frame, text="Gasto", command=grafico_gastos)
+        boton3.place(rely=0.05, relx=0.63, relheight=0.07, relwidth=0.15)
 
     # -------------------------
     # TAB: Revisión de Gastos Mensuales
