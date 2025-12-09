@@ -304,6 +304,7 @@ class SistemaContableApp:
             self.crear_tab_factura()
             self.crear_tab_generar_pedido()
             self.crear_tab_firma()
+            self.crear_tab_cancelar_pedido()
         elif rol == "Contadora":
             self.crear_tab_analisis()
             self.crear_tab_graf()
@@ -1286,6 +1287,7 @@ class SistemaContableApp:
 
         # --- Tabla registro de pedidos (DERECHA) con más columnas ---
         ttk.Label(frame, text="Registro de Pedidos").grid(row=0, column=3, padx=10, pady=10, sticky="w")
+        
 
         columnas_registro = ("codigo", "proveedor", "producto", "cantidad", "fecha", "estado")
         self.tabla_registro_pedidos = ttk.Treeview(frame, columns=columnas_registro, show="headings", height=18)
@@ -1304,7 +1306,7 @@ class SistemaContableApp:
         self.tabla_registro_pedidos.column("estado", width=110, anchor="center")
 
         self.tabla_registro_pedidos.grid(row=1, column=3, rowspan=10, padx=10, pady=10, sticky="nsew")
-
+        self.tabla_registro_pedidos.bind("<Double-1>", self.editar_pedido)
         # Cargar pedidos guardados en pedidos.db (una fila por item)
         try:
             self.ped_cursor.execute("""
@@ -1317,7 +1319,246 @@ class SistemaContableApp:
                 self.tabla_registro_pedidos.insert("", "end", values=row)
         except Exception:
             pass
+    def editar_pedido(self, event):
+        item_id = self.tabla_registro_pedidos.focus()
+        if not item_id:
+            return
 
+        codigo, proveedor, producto, cantidad, fecha, estado = self.tabla_registro_pedidos.item(item_id, "values")
+
+        ventana = tk.Toplevel()
+        ventana.title(f"Editar Pedido {codigo}")
+        ventana.grab_set()
+
+        ttk.Label(ventana, text="Proveedor:").grid(row=0, column=0, padx=10, pady=5)
+        entry_proveedor = ttk.Entry(ventana, width=30)
+        entry_proveedor.insert(0, proveedor)
+        entry_proveedor.grid(row=0, column=1, padx=10, pady=5)
+
+        ttk.Label(ventana, text="Producto:").grid(row=1, column=0, padx=10, pady=5)
+        entry_producto = ttk.Entry(ventana, width=30)
+        entry_producto.insert(0, producto)
+        entry_producto.grid(row=1, column=1, padx=10, pady=5)
+
+        ttk.Label(ventana, text="Cantidad:").grid(row=2, column=0, padx=10, pady=5)
+        entry_cantidad = ttk.Entry(ventana, width=15)
+        entry_cantidad.insert(0, cantidad)
+        entry_cantidad.grid(row=2, column=1, padx=10, pady=5)
+
+        ttk.Label(ventana, text="Fecha (YYYY-MM-DD):").grid(row=3, column=0, padx=10, pady=5)
+        entry_fecha = ttk.Entry(ventana, width=15)
+        entry_fecha.insert(0, fecha)
+        entry_fecha.grid(row=3, column=1, padx=10, pady=5)
+
+        ttk.Label(ventana, text="Estado:").grid(row=4, column=0, padx=10, pady=5)
+        combo_estado = ttk.Combobox(
+            ventana,
+            values=["Pendiente", "En Proceso", "Entregado"],
+            state="readonly"
+        )
+        combo_estado.set(estado if estado != "Cancelado" else "Pendiente")
+        combo_estado.grid(row=4, column=1, padx=10, pady=5)
+
+        def guardar_cambios():
+            nuevo_proveedor = entry_proveedor.get().strip()
+            nuevo_producto = entry_producto.get().strip()
+            nueva_cantidad = entry_cantidad.get().strip()
+            nueva_fecha = entry_fecha.get().strip()
+            nuevo_estado = combo_estado.get().strip()
+
+            if not nuevo_proveedor or not nuevo_producto or not nueva_cantidad.isdigit():
+                messagebox.showerror("Error", "Datos inválidos.")
+                return
+
+            try:
+                datetime.strptime(nueva_fecha, "%Y-%m-%d")
+            except:
+                messagebox.showerror("Error", "Fecha inválida.")
+                return
+
+            try:
+                # --- Solo actualizamos campos generales en pedidos ---
+                self.ped_cursor.execute("""
+                    UPDATE pedidos SET proveedor=?, fecha=?, estado=?
+                    WHERE codigo_pedido=?
+                """, (nuevo_proveedor, nueva_fecha, nuevo_estado, codigo))
+
+                # --- Actualizamos solo este item en pedido_items ---
+                self.ped_cursor.execute("""
+                    UPDATE pedido_items SET producto=?, cantidad=?
+                    WHERE codigo_pedido=? AND producto=? AND cantidad=?
+                """, (nuevo_producto, int(nueva_cantidad), codigo, producto, cantidad))
+
+                self.ped_con.commit()
+
+                # --- Actualizamos visualmente solo la fila seleccionada ---
+                self.tabla_registro_pedidos.item(item_id, values=(
+                    codigo, nuevo_proveedor, nuevo_producto, nueva_cantidad, nueva_fecha, nuevo_estado
+                ))
+
+                messagebox.showinfo("Éxito", "Pedido actualizado correctamente.")
+                ventana.destroy()
+
+            except Exception as e:
+                messagebox.showerror("Error BD", f"No se pudo actualizar:\n{e}")
+
+        ttk.Button(ventana, text="Guardar Cambios", command=guardar_cambios).grid(
+            row=5, column=0, columnspan=2, pady=15
+        )
+
+    def crear_tab_cancelar_pedido(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Cancelar Pedido")
+        
+        # --- Filtros de búsqueda ---
+        ttk.Label(frame, text="Proveedor:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        self.combo_filtro_proveedor = ttk.Combobox(frame, values=[], width=30, state="readonly")
+        self.combo_filtro_proveedor.grid(row=0, column=1, padx=10, pady=5)
+
+        ttk.Label(frame, text="Producto:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        self.combo_filtro_producto = ttk.Combobox(frame, values=[], width=30, state="readonly")
+        self.combo_filtro_producto.grid(row=1, column=1, padx=10, pady=5)
+
+        ttk.Button(frame, text="Filtrar Pedidos", command=self.filtrar_pedidos_cancelar).grid(
+            row=2, column=0, columnspan=2, pady=10
+        )
+
+        # --- Tabla de pedidos filtrados ---
+        columnas = ("codigo", "proveedor", "producto", "cantidad", "fecha", "estado")
+        self.tabla_cancelar_pedidos = ttk.Treeview(frame, columns=columnas, show="headings", height=15)
+        for col, texto in zip(columnas, ["Código", "Proveedor", "Producto", "Cantidad", "Fecha", "Estado"]):
+            self.tabla_cancelar_pedidos.heading(col, text=texto)
+            self.tabla_cancelar_pedidos.column(col, width=100, anchor="center")
+        self.tabla_cancelar_pedidos.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
+
+        # Botón para cancelar pedido
+        ttk.Button(frame, text="Cancelar Pedido", command=self.cancelar_pedido_seleccionado).grid(
+            row=4, column=0, columnspan=2, pady=15
+        )
+
+        # --- Cargar valores iniciales para los filtros ---
+        self.actualizar_filtros_cancelar()
+
+    # ---------------------------------------------
+    # Función para actualizar los valores de los filtros
+    # ---------------------------------------------
+    def actualizar_filtros_cancelar(self):
+        try:
+            # Proveedores únicos
+            self.ped_cursor.execute("SELECT DISTINCT proveedor FROM pedidos")
+            proveedores = [row[0] for row in self.ped_cursor.fetchall()]
+            self.combo_filtro_proveedor['values'] = ["Todos"] + proveedores
+            self.combo_filtro_proveedor.current(0)
+
+            # Inicialmente productos vacíos
+            self.combo_filtro_producto['values'] = ["Todos"]
+            self.combo_filtro_producto.current(0)
+
+            # Conectar evento de cambio de proveedor
+            self.combo_filtro_proveedor.bind("<<ComboboxSelected>>", self.actualizar_productos_por_proveedor)
+
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudieron cargar filtros:\n{e}")
+
+    def actualizar_productos_por_proveedor(self, event=None):
+        proveedor = self.combo_filtro_proveedor.get()
+        try:
+            if proveedor == "Todos":
+                self.ped_cursor.execute("SELECT DISTINCT producto FROM pedido_items")
+            else:
+                # Solo productos del proveedor seleccionado
+                self.ped_cursor.execute("""
+                    SELECT DISTINCT i.producto
+                    FROM pedido_items i
+                    JOIN pedidos p ON i.codigo_pedido = p.codigo_pedido
+                    WHERE p.proveedor = ?
+                """, (proveedor,))
+            productos = [row[0] for row in self.ped_cursor.fetchall()]
+            self.combo_filtro_producto['values'] = ["Todos"] + productos
+            self.combo_filtro_producto.current(0)
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudieron cargar productos:\n{e}")
+
+    # ---------------------------------------------
+    # Función para filtrar la tabla según selección
+    # ---------------------------------------------
+    def filtrar_pedidos_cancelar(self):
+        proveedor = self.combo_filtro_proveedor.get().strip()
+        producto = self.combo_filtro_producto.get().strip()
+
+        query = """
+            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+            FROM pedidos p
+            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+            WHERE 1=1
+        """
+        params = []
+
+        if proveedor != "":
+            query += " AND p.proveedor = ?"
+            params.append(proveedor)
+
+        if producto != "":
+            query += " AND i.producto = ?"
+            params.append(producto)
+
+        query += " ORDER BY p.fecha DESC, p.codigo_pedido DESC"
+
+        # Limpiar tabla
+        for row in self.tabla_cancelar_pedidos.get_children():
+            self.tabla_cancelar_pedidos.delete(row)
+
+        try:
+            self.ped_cursor.execute(query, params)
+            rows = self.ped_cursor.fetchall()
+
+            if not rows:
+                messagebox.showinfo("Sin resultados", "No se encontraron pedidos con esos filtros.")
+
+            for row in rows:
+                self.tabla_cancelar_pedidos.insert("", "end", values=row)
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudieron filtrar pedidos:\n{e}")
+
+    # ---------------------------------------------
+    # Función para cancelar pedido seleccionado
+    # ---------------------------------------------
+    def cancelar_pedido_seleccionado(self):
+        item_id = self.tabla_cancelar_pedidos.focus()
+        if not item_id:
+            messagebox.showwarning("Seleccionar Pedido", "Seleccione un pedido para cancelar.")
+            return
+
+        codigo, proveedor, producto, cantidad, fecha, estado = self.tabla_cancelar_pedidos.item(item_id, "values")
+
+        if estado == "Cancelado":
+            messagebox.showinfo("Pedido ya cancelado", "Este pedido ya se encuentra cancelado.")
+            return
+
+        # Confirmación
+        if not messagebox.askyesno("Confirmar Cancelación", f"¿Desea cancelar el pedido {codigo}?"):
+            return
+
+        try:
+            # Actualizar base de datos
+            self.ped_cursor.execute("UPDATE pedidos SET estado = 'Cancelado' WHERE codigo_pedido = ?", (codigo,))
+            self.ped_con.commit()
+
+            # Actualizar visualmente la tabla
+            self.tabla_cancelar_pedidos.item(item_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
+
+            # Opcional: actualizar también la tabla principal de registro de pedidos
+            for row_id in self.tabla_registro_pedidos.get_children():
+                if self.tabla_registro_pedidos.item(row_id, "values")[0] == codigo:
+                    self.tabla_registro_pedidos.item(row_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
+
+            messagebox.showinfo("Pedido Cancelado", f"El pedido {codigo} ha sido cancelado.")
+
+        except Exception as e:
+            messagebox.showerror("Error BD", f"No se pudo cancelar el pedido:\n{e}")
+
+
+        
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
         frame_retenciones.grid_rowconfigure(1, weight=1)
@@ -1425,5 +1666,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     LoginApp(root)
     root.mainloop()
-
-
