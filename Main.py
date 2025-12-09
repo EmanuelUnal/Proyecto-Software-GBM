@@ -746,9 +746,9 @@ class SistemaContableApp:
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
-            r7.config(text=a, background="WHITE")
-            r8.config(text=b, background="WHITE")
-            r9.config(text=c, background="WHITE")
+            r7.config(text=a, background="WHITE", borderwidth=2, relief="solid")
+            r8.config(text=b, background="WHITE", borderwidth=2, relief="solid")
+            r9.config(text=c, background="WHITE", borderwidth=2, relief="solid")
 
  #--------------Analizar posible proveedores-------------       
         def proveedores():
@@ -763,18 +763,18 @@ class SistemaContableApp:
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
-            r1.config(text=a, background="WHITE")
-            r2.config(text=b, background="WHITE")
-            r3.config(text=c, background="WHITE")
+            r1.config(text=a, background="WHITE", borderwidth=2, relief="solid")
+            r2.config(text=b, background="WHITE", borderwidth=2, relief="solid")
+            r3.config(text=c, background="WHITE", borderwidth=2, relief="solid")
 
 #--------------Análisis general de los gastos-----------------
         def general():
             (a,b,c) = analisis.general()
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin datos", "No hay datos que actualizar")
-            r4.config(text=a, background="WHITE")
-            r5.config(text=b, background="WHITE")
-            r6.config(text=c, background="WHITE")
+            r4.config(text=a, background="WHITE", borderwidth=2, relief="solid")
+            r5.config(text=b, background="WHITE", borderwidth=2, relief="solid")
+            r6.config(text=c, background="WHITE", borderwidth=2, relief="solid")
 
 #---------------------Modelar la interfaz---------------------
         frame = ttk.Frame(self.notebook)
