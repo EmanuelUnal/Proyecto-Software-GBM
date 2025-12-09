@@ -310,7 +310,7 @@ class SistemaContableApp:
             self.crear_tab_graf()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
-            self._create_bottom_bar()
+            
 
 
     def _create_bottom_bar(self):
@@ -460,11 +460,11 @@ class SistemaContableApp:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Firma")
 
-        ttk.Label(frame, text="Subir / Ver firma digital", font=("Segoe UI", 12)).pack(padx=10, pady=(10,6), anchor="center")
+        ttk.Label(frame, text="Subir / Ver firma digital", font=("Segoe UI", 12)).pack(expand=True, padx=10, pady=(10,6), anchor="center")
 
         # Area to display signature image
         self.firma_canvas_holder = ttk.Frame(frame, padding=8)
-        self.firma_canvas_holder.pack(fill="both", expand=False, padx=10, pady=6)
+        self.firma_canvas_holder.pack(fill="both", expand=True, padx=10, pady=6)
 
         self.firma_label = ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.")
         self.firma_label.pack()
