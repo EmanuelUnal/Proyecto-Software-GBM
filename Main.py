@@ -371,6 +371,14 @@ class SistemaContableApp:
         codes_box = ttk.LabelFrame(frame, text="Códigos y Acciones", padding=8)
         codes_box.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(6,10))
 
+         # --- Preview de firma del usuario actual (compacto) ---
+        # colocar en codes_box, columna derecha (ajusta column index si lo necesitas)
+        self.firma_factura_holder = ttk.Frame(codes_box, width=180, padding=4)
+        self.firma_factura_holder.grid(row=0, column=5, rowspan=2, padx=10, pady=4)
+        self.firma_factura_holder.grid_propagate(False)
+        self.firma_factura_label = ttk.Label(self.firma_factura_holder, text="Sin firma")
+        self.firma_factura_label.pack(expand=True)
+
         # Ajustes de pesos del layout: dejar la columna derecha sin peso (fija) y dar espacio a la izquierda
         frame.grid_rowconfigure(0, weight=0)
         frame.grid_rowconfigure(1, weight=0)
@@ -433,6 +441,13 @@ class SistemaContableApp:
         self.productos_table.column("fecha", width=110, anchor="center")
         self.productos_table.column("producto", width=180, anchor="w")
         self.productos_table.column("cantidad", width=80, anchor="center")
+        self.productos_table.column("concepto", width=150, anchor="center")
+        self.productos_table.column("valoru", width=100, anchor="w")
+        self.productos_table.column("iva", width=80, anchor="center")
+        self.productos_table.column("retencion", width=100, anchor="e")
+        self.productos_table.column("valort", width=100, anchor="w")
+        self.productos_table.column("codigo_factura", width=120, anchor="center")
+        self.productos_table.column("codigo_pedido", width=120, anchor="center")
 
         self.productos_table.grid(row=0, column=0, sticky="nsew")
         vsb = ttk.Scrollbar(table_box, orient="vertical", command=self.productos_table.yview)
@@ -456,27 +471,43 @@ class SistemaContableApp:
 
         ttk.Button(codes_box, text="Agregar Producto", command=self.agregar_producto).grid(row=0, column=4, padx=10, pady=4)#agrega la factura a la base de datos
 
+                # intentar mostrar la firma actual (si existe)
+        try:
+            self._mostrar_firma_en_factura()
+        except Exception:
+            pass
+
     def crear_tab_firma(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Firma")
+        # filas espaciadoras arriba y abajo para centrar verticalmente
+        frame.grid_rowconfigure(0, weight=1)
+        frame.grid_rowconfigure(1, weight=0)  # título
+        frame.grid_rowconfigure(2, weight=0)  # imagen (contenido compacto)
+        frame.grid_rowconfigure(3, weight=0)  # botones
+        frame.grid_rowconfigure(4, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
 
-        ttk.Label(frame, text="Subir / Ver firma digital", font=("Segoe UI", 12)).pack(expand=True, padx=10, pady=(10,6), anchor="center")
+        ttk.Label(frame, text="Subir / Ver firma digital", font=("Segoe UI", 12)).grid(row=1, column=0, pady=(2,6))
 
-        # Area to display signature image
-        self.firma_canvas_holder = ttk.Frame(frame, padding=8)
-        self.firma_canvas_holder.pack(fill="both", expand=True, padx=10, pady=6)
+        # contenedor compacto centrado para la imagen
+        self.firma_canvas_holder = ttk.Frame(frame, padding=4)
+        self.firma_canvas_holder.grid(row=2, column=0)
 
-        self.firma_label = ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.")
-        self.firma_label.pack()
+        # etiqueta que contendrá la imagen o texto (se actualizará en _mostrar_firma_actual)
+        self.firma_image_label = ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.")
+        self.firma_image_label.grid(row=0, column=0)
 
+        # botones compactos justo debajo de la imagen
         btns = ttk.Frame(frame)
-        btns.pack(padx=10, pady=8, anchor="center")
+        btns.grid(row=3, column=0, pady=(6, 8))
 
-        ttk.Button(btns, text="Seleccionar archivo de firma", command=self._seleccionar_y_guardar_firma).pack(side=tk.LEFT, padx=6)
-        ttk.Button(btns, text="Mostrar firma actual", command=self._mostrar_firma_actual).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btns, text="Seleccionar archivo de firma", command=self._seleccionar_y_guardar_firma).grid(row=0, column=0, padx=6)
+        ttk.Button(btns, text="Mostrar firma actual", command=self._mostrar_firma_actual).grid(row=0, column=1, padx=6)
 
-        # Try to display current signature if exists
+        # mostrar si ya hay una firma
         self._mostrar_firma_actual()
+
 
     def _seleccionar_y_guardar_firma(self):
         # Abrir dialogo para seleccionar imagen
@@ -499,42 +530,93 @@ class SistemaContableApp:
             # Update in-memory usuario
             self.usuario['firma'] = stored_name
 
+            # refrescar preview en la pestaña Firma y en la pestaña Registrar Factura
+            try:
+                self._mostrar_firma_actual()
+            except Exception:
+                pass
+            try:
+                self._mostrar_firma_en_factura()
+            except Exception:
+                pass
             messagebox.showinfo("Éxito", f"Firma guardada como {stored_name}")
-            self._mostrar_firma_actual()
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo guardar la firma:\n{e}")
 
     def _mostrar_firma_actual(self):
-        # Clear previous widgets in holder
+        # Limpiar holder compacto (solo la etiqueta/imagen)
         for w in self.firma_canvas_holder.winfo_children():
             w.destroy()
 
         firma_fname = self.usuario.get('firma', '') if isinstance(self.usuario, dict) else ""
         if not firma_fname:
-            ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.").pack()
+            self.firma_image_label = ttk.Label(self.firma_canvas_holder, text="No hay firma cargada.")
+            self.firma_image_label.grid(row=0, column=0)
             return
 
         app_dir = Path(__file__).parent
         img_path = app_dir / firma_fname
         if not img_path.exists():
-            ttk.Label(self.firma_canvas_holder, text="Archivo de firma no encontrado.").pack()
+            self.firma_image_label = ttk.Label(self.firma_canvas_holder, text="Archivo de firma no encontrado.")
+            self.firma_image_label.grid(row=0, column=0)
             return
 
         try:
+            # tamaño compacto (ajusta si quieres más pequeño/grande)
+            max_w, max_h = 720, 280
+
             if _HAS_PIL:
                 img = Image.open(img_path)
-                # Resize to fit nicely in UI if large
-                max_w, max_h = 400, 200
                 img.thumbnail((max_w, max_h))
                 self._firma_photo = ImageTk.PhotoImage(img)
             else:
-                # fallback: Tk PhotoImage supports PNG/GIF; may fail on JPG
+                # PhotoImage puede tener limitaciones con JPEG; si falla, mostrará error
                 self._firma_photo = tk.PhotoImage(file=str(img_path))
-            lbl = ttk.Label(self.firma_canvas_holder, image=self._firma_photo)
-            lbl.image = self._firma_photo
-            lbl.pack()
+
+            # mostrar imagen centrada en el holder (grid centrar)
+            self.firma_image_label = ttk.Label(self.firma_canvas_holder, image=self._firma_photo)
+            self.firma_image_label.image = self._firma_photo
+            self.firma_image_label.grid(row=0, column=0, padx=4, pady=2)
         except Exception as e:
-            ttk.Label(self.firma_canvas_holder, text=f"No se pudo mostrar la firma: {e}").pack()
+            self.firma_image_label = ttk.Label(self.firma_canvas_holder, text=f"No se pudo mostrar la firma:\n{e}")
+            self.firma_image_label.grid(row=0, column=0)
+
+    def _mostrar_firma_en_factura(self):
+        """Muestra una vista compacta de la firma del usuario en la pestaña Registrar Factura."""
+        # si no existe el holder (por ejemplo en otros roles), salir silenciosamente
+        if not hasattr(self, "firma_factura_holder"):
+            return
+
+        # limpiar holder
+        for w in self.firma_factura_holder.winfo_children():
+            w.destroy()
+
+        firma_fname = self.usuario.get('firma', '') if isinstance(self.usuario, dict) else ""
+        if not firma_fname:
+            ttk.Label(self.firma_factura_holder, text="Sin firma registrada.").pack(expand=True)
+            self._firma_factura_photo = None
+            return
+
+        img_path = Path(__file__).parent / firma_fname
+        if not img_path.exists():
+            ttk.Label(self.firma_factura_holder, text="Firma no encontrada.").pack(expand=True)
+            self._firma_factura_photo = None
+            return
+
+        try:
+            max_w, max_h = 180, 80  # compacto
+            if _HAS_PIL:
+                img = Image.open(img_path)
+                img.thumbnail((max_w, max_h))
+                self._firma_factura_photo = ImageTk.PhotoImage(img)
+            else:
+                self._firma_factura_photo = tk.PhotoImage(file=str(img_path))
+            lbl = ttk.Label(self.firma_factura_holder, image=self._firma_factura_photo)
+            lbl.image = self._firma_factura_photo
+            lbl.pack(expand=True)
+        except Exception as e:
+            ttk.Label(self.firma_factura_holder, text=f"Error mostrar firma").pack(expand=True)
+            self._firma_factura_photo = None
 
     def agregar_producto_a_factura_table(self):
         producto = self.entry_producto.get().strip()
@@ -574,6 +656,16 @@ class SistemaContableApp:
         self.entry_retencion.delete(0, tk.END)
 
     def guardar_factura(self):
+        # comprobar firma del usuario actual
+        firma_fname = self.usuario.get('firma', '') if isinstance(self.usuario, dict) else ""
+        if not firma_fname:
+            messagebox.showerror("Firma requerida", "No puede guardar facturas: el usuario no tiene firma digital registrada.")
+            return
+        app_dir = Path(__file__).parent
+        if not (app_dir / firma_fname).exists():
+            messagebox.showerror("Firma inválida", "No puede guardar facturas: el archivo de firma no existe.")
+            return
+        
         proveedor = self.entry_proveedor.get().strip()
         fecha = self.entry_fecha.get().strip()
         codigo_fact = self.entry_codigo_factura.get().strip()
