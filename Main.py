@@ -60,7 +60,7 @@ class LoginApp:
         style.configure("TButton",
             background=COLOR_VERDE,
             foreground="black",
-            padding=6,
+            padding=1,
             font=("Segoe UI", 10, "bold")
         )
         style.map("TButton",
@@ -79,12 +79,12 @@ class LoginApp:
         # ENTRY / COMBOBOX
         # ---------------------
         style.configure("TEntry",
-            padding=4,
+            padding=1,
             fieldbackground="white",
             bordercolor=COLOR_VERDE
         )
         style.configure("TCombobox",
-            padding=4,
+            padding=1,
             fieldbackground="white",
             bordercolor=COLOR_VERDE
         )
@@ -492,9 +492,13 @@ class SistemaContableApp:
             pass
         self.root.geometry("1100x720")
 
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 50))
+        # 1. Empaqueta la barra inferior primero para que reserve el espacio.
         self._create_bottom_bar()
+
+        # 2. Empaqueta el Notebook después, indicando que llene el espacio restante (sin padding).
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True) # Se elimina: pady=(0, 50)
+        
         self.root.update()
         self.root.minsize(self.root.winfo_width(), self.root.winfo_height())
 
@@ -541,9 +545,9 @@ class SistemaContableApp:
         columnas = ("producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort")
 
         # contenedor con ancho fijo para limitar la tabla temporal
-        factura_holder = ttk.Frame(frame, width=420)
+        factura_holder = ttk.Frame(frame, width=420, height=200)   # se añade height limitado
         factura_holder.grid(row=0, column=1, rowspan=1, padx=10, pady=10, sticky="ns")
-        factura_holder.grid_propagate(False)   # evita que el contenido cambie el ancho
+        factura_holder.grid_propagate(False)   # evita que el contenido cambie el tamaño del holder
 
         # Treeview dentro del holder
         self.factura_table = ttk.Treeview(factura_holder, columns=columnas, show="headings", height=4)
@@ -567,14 +571,20 @@ class SistemaContableApp:
         # llenar el holder sin que se expanda horizontalmente en el grid principal
         self.factura_table.pack(fill="both", expand=True)
 
+        # --- Caja principal que contiene la tabla grande ---
         table_box = ttk.LabelFrame(frame, text="Productos en la Factura", padding=6)
         table_box.grid(row=2, column=0,columnspan=2, sticky="nsew", padx=10, pady=6)
+
+        # ---- FIX: limitar la altura del table_box para que no crezca y tape la bottom bar ----
+        table_height = 360  # ajusta este valor si quieres más o menos espacio para la tabla
+        table_box.configure(height=table_height)
+        table_box.grid_propagate(False)   # evita que el contenido cambie su tamaño
+        # ------------------------------------------------------------------------------------
 
         codes_box = ttk.LabelFrame(frame, text="Códigos y Acciones", padding=8)
         codes_box.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(6,10))
 
-         # --- Preview de firma del usuario actual (compacto) ---
-        # colocar en codes_box, columna derecha (ajusta column index si lo necesitas)
+        # --- Preview de firma del usuario actual (compacto) ---
         self.firma_factura_holder = ttk.Frame(codes_box, width=180, padding=4)
         self.firma_factura_holder.grid(row=0, column=5, rowspan=2, padx=10, pady=4)
         self.firma_factura_holder.grid_propagate(False)
@@ -584,42 +594,42 @@ class SistemaContableApp:
         # Ajustes de pesos del layout: dejar la columna derecha sin peso (fija) y dar espacio a la izquierda
         frame.grid_rowconfigure(0, weight=0)
         frame.grid_rowconfigure(1, weight=0)
-        frame.grid_rowconfigure(2, weight=1)   # tabla principal (table_box) sí crece
+        frame.grid_rowconfigure(2, weight=1)   # tabla principal (table_box) sí puede crecer en su celda
         frame.grid_columnconfigure(0, weight=1)  # formulario / columna izquierda puede crecer
         frame.grid_columnconfigure(1, weight=0)  # columna del holder queda fija
         table_box.grid_rowconfigure(0, weight=1)
         table_box.grid_columnconfigure(0, weight=1)
 
         # Campos del formulario (en form_box)
-        ttk.Label(form_box, text="Proveedor:").grid(row=0, column=0, sticky="e", padx=6, pady=4)#nombre del proveedor
+        ttk.Label(form_box, text="Proveedor:").grid(row=0, column=0, sticky="e", padx=6, pady=4)
         self.entry_proveedor = ttk.Entry(form_box)
         self.entry_proveedor.grid(row=0, column=1, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="Fecha (YYYY-MM-DD):").grid(row=0, column=2, sticky="e", padx=6, pady=4)#fecha de la factura
+        ttk.Label(form_box, text="Fecha (YYYY-MM-DD):").grid(row=0, column=2, sticky="e", padx=6, pady=4)
         self.entry_fecha = ttk.Entry(form_box)
         self.entry_fecha.grid(row=0, column=3, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="Producto:").grid(row=1, column=0, sticky="e", padx=6, pady=4)#nombre del producto
+        ttk.Label(form_box, text="Producto:").grid(row=1, column=0, sticky="e", padx=6, pady=4)
         self.entry_producto = ttk.Entry(form_box)
         self.entry_producto.grid(row=1, column=1, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="Cantidad:").grid(row=1, column=2, sticky="e", padx=6, pady=4)#cantidad del producto
+        ttk.Label(form_box, text="Cantidad:").grid(row=1, column=2, sticky="e", padx=6, pady=4)
         self.entry_cantidad = ttk.Entry(form_box)
         self.entry_cantidad.grid(row=1, column=3, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="Concepto:").grid(row=2, column=0, sticky="e", padx=6, pady=4)#descripcion del producto o su tipo, puede ser del tipo: agroquimico, medicamento, maquinaria, gastos administrativos, etc)
+        ttk.Label(form_box, text="Concepto:").grid(row=2, column=0, sticky="e", padx=6, pady=4)
         self.entry_concepto = ttk.Entry(form_box)
         self.entry_concepto.grid(row=2, column=1, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="ValorU:").grid(row=2, column=2, sticky="e", padx=6, pady=4)#valor unitario del producto
+        ttk.Label(form_box, text="ValorU:").grid(row=2, column=2, sticky="e", padx=6, pady=4)
         self.entry_valoru = ttk.Entry(form_box)
         self.entry_valoru.grid(row=2, column=3, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="Iva:").grid(row=3, column=0, sticky="e", padx=6, pady=4)#impuesto al consumo, su default es 1
+        ttk.Label(form_box, text="Iva:").grid(row=3, column=0, sticky="e", padx=6, pady=4)
         self.entry_iva = ttk.Entry(form_box)
         self.entry_iva.grid(row=3, column=1, sticky="w", padx=6, pady=4)
 
-        ttk.Label(form_box, text="Retencion:").grid(row=3, column=2, sticky="e", padx=6, pady=4)#impuesto directo al gobierno, se calcula en otra pestaña
+        ttk.Label(form_box, text="Retencion:").grid(row=3, column=2, sticky="e", padx=6, pady=4)
         self.entry_retencion = ttk.Entry(form_box)
         self.entry_retencion.grid(row=3, column=3, sticky="w", padx=6, pady=4)
 
@@ -630,14 +640,14 @@ class SistemaContableApp:
         ttk.Button(btn_frame_fact, text="Guardar Factura", command=self.guardar_factura).pack(side=tk.LEFT, padx=6)
         ttk.Button(btn_frame_fact, text="Limpiar Items", command=lambda: [self.factura_table.delete(i) for i in self.factura_table.get_children()]).pack(side=tk.LEFT, padx=6)
 
-
         # Tabla en table_box — permite expansión y columnas con ancho por defecto
         columns = ("proveedor", "fecha", "producto", "cantidad", "concepto", "valoru", "iva", "retencion", "valort", "codigo_factura", "codigo_pedido")
         self.productos_table = ttk.Treeview(table_box, columns=columns, show="headings", height=10)
         for col, title in [("proveedor","Proveedor"),("fecha","Fecha"),("producto","Producto"),("cantidad","Cantidad"),
-                           ("concepto","Concepto"),("valoru","ValorU"),("iva","Iva"),("retencion","Retencion"),
-                           ("valort","ValorT"),("codigo_factura","Codigo Factura"),("codigo_pedido","Codigo Pedido")]:
+                        ("concepto","Concepto"),("valoru","ValorU"),("iva","Iva"),("retencion","Retencion"),
+                        ("valort","ValorT"),("codigo_factura","Codigo Factura"),("codigo_pedido","Codigo Pedido")]:
             self.productos_table.heading(col, text=title)
+
         # columnas ejemplo anchos
         self.productos_table.column("proveedor", width=150, anchor="w")
         self.productos_table.column("fecha", width=110, anchor="center")
@@ -651,6 +661,7 @@ class SistemaContableApp:
         self.productos_table.column("codigo_factura", width=120, anchor="center")
         self.productos_table.column("codigo_pedido", width=120, anchor="center")
 
+        # insertamos la tabla dentro del table_box (grid)
         self.productos_table.grid(row=0, column=0, sticky="nsew")
         vsb = ttk.Scrollbar(table_box, orient="vertical", command=self.productos_table.yview)
         self.productos_table.configure(yscrollcommand=vsb.set)
@@ -663,21 +674,25 @@ class SistemaContableApp:
             self.productos_table.insert("", "end", values=f[:11])
 
         # Códigos y botón (en codes_box)
-        ttk.Label(codes_box, text="Codigo factura:").grid(row=0, column=0, sticky="e", padx=6, pady=4)#codigo unico de la factura, puede ser del tipo: FE123456
+        ttk.Label(codes_box, text="Codigo factura:").grid(row=0, column=0, sticky="e", padx=6, pady=4)
         self.entry_codigo_factura = ttk.Entry(codes_box)
         self.entry_codigo_factura.grid(row=0, column=1, sticky="w", padx=6, pady=4)
 
-        ttk.Label(codes_box, text="Codigo pedido:").grid(row=0, column=2, sticky="e", padx=6, pady=4)#codigo unico del pedido
+        ttk.Label(codes_box, text="Codigo pedido:").grid(row=0, column=2, sticky="e", padx=6, pady=4)
         self.entry_codigo_pedido = ttk.Entry(codes_box)
         self.entry_codigo_pedido.grid(row=0, column=3, sticky="w", padx=6, pady=4)
 
-        ttk.Button(codes_box, text="Agregar Producto", command=self.agregar_producto).grid(row=0, column=4, padx=10, pady=4)#agrega la factura a la base de datos
+        ttk.Button(codes_box, text="Agregar Producto", command=self.agregar_producto).grid(row=0, column=4, padx=10, pady=4)
 
-                # intentar mostrar la firma actual (si existe)
+        # intentar mostrar la firma actual (si existe)
         try:
             self._mostrar_firma_en_factura()
         except Exception:
             pass
+
+        # asegurar layout estable antes de que el usuario interactúe
+        self.root.update_idletasks()
+
 
     def crear_tab_firma(self):
         frame = ttk.Frame(self.notebook)
