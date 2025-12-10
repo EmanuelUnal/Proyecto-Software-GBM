@@ -4,9 +4,9 @@ import analisis
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 from datetime import datetime, date
-#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-#from matplotlib.figure import Figure
-#import matplotlib.ticker as mticker
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import matplotlib.ticker as mticker
 import sys, os
 import shutil
 
