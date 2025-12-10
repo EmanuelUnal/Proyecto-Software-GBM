@@ -31,6 +31,106 @@ DB_PATH = resource_path("contabilidad_lechera.db")
 class LoginApp:
     def __init__(self, root):
         self.root = root
+        # ------------------------
+        # ESTILOS PERSONALIZADOS 
+        # ------------------------
+        style = ttk.Style()
+
+        # Elegir un tema base
+        style.theme_use("clam")
+
+        # Colores del logo
+        COLOR_VERDE = "#8BD63A"
+        COLOR_VERDE_OSCURO = "#6FBF2E"
+        COLOR_FONDO = "#FFFFFF"
+        COLOR_TEXTO = "#000000"
+
+        # ---------------------
+        # ESTILO GENERAL ttk
+        # ---------------------
+        style.configure(".", 
+            background=COLOR_FONDO,
+            foreground=COLOR_TEXTO,
+            font=("Segoe UI", 10)
+        )
+
+        # ---------------------
+        # BOTONES
+        # ---------------------
+        style.configure("TButton",
+            background=COLOR_VERDE,
+            foreground="black",
+            padding=6,
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("TButton",
+            background=[("active", COLOR_VERDE_OSCURO)]
+        )
+
+        # ---------------------
+        # LABELS
+        # ---------------------
+        style.configure("TLabel",
+            background=COLOR_FONDO,
+            foreground=COLOR_TEXTO
+        )
+
+        # ---------------------
+        # ENTRY / COMBOBOX
+        # ---------------------
+        style.configure("TEntry",
+            padding=4,
+            fieldbackground="white",
+            bordercolor=COLOR_VERDE
+        )
+        style.configure("TCombobox",
+            padding=4,
+            fieldbackground="white",
+            bordercolor=COLOR_VERDE
+        )
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", "white")],
+            selectbackground=[("readonly", COLOR_VERDE)],
+            selectforeground=[("readonly", "black")]
+        )
+
+        # ---------------------
+        # NOTEBOOK (Tabs)
+        # ---------------------
+        style.configure("TNotebook",
+            background=COLOR_FONDO,
+            tabmargins=[6, 4, 2, 0]
+        )
+        style.configure("TNotebook.Tab",
+            background="#E8F6D8",
+            padding=[10, 4],
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("TNotebook.Tab",
+            background=[("selected", COLOR_VERDE_OSCURO)],
+            foreground=[("selected", "white")]
+        )
+
+        # ---------------------
+        # TREEVIEW (tablas)
+        # ---------------------
+        style.configure("Treeview",
+            background="white",
+            foreground="black",
+            fieldbackground="white",
+            bordercolor=COLOR_VERDE_OSCURO,
+            rowheight=24
+        )
+        style.configure("Treeview.Heading",
+            background=COLOR_VERDE,
+            foreground="black",
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("Treeview.Heading",
+            background=[("active", COLOR_VERDE_OSCURO)]
+        )
+
         self.root.title("V.A.C.A - Login / Registro")
         try:
             icon_path = Path(__file__).with_name("logo.ico")
@@ -277,6 +377,106 @@ class LoginApp:
 class SistemaContableApp:
     def __init__(self, root, db_connection, usuario, cursor, ped_connection=None, ped_cursor=None):
         self.root = root
+        # ------------------------
+        # ESTILOS PERSONALIZADOS 
+        # ------------------------
+        style = ttk.Style()
+
+        # Elegir un tema base
+        style.theme_use("clam")
+
+        # Colores del logo
+        COLOR_VERDE = "#8BD63A"
+        COLOR_VERDE_OSCURO = "#6FBF2E"
+        COLOR_FONDO = "#FFFFFF"
+        COLOR_TEXTO = "#000000"
+
+        # ---------------------
+        # ESTILO GENERAL ttk
+        # ---------------------
+        style.configure(".", 
+            background=COLOR_FONDO,
+            foreground=COLOR_TEXTO,
+            font=("Segoe UI", 10)
+        )
+
+        # ---------------------
+        # BOTONES
+        # ---------------------
+        style.configure("TButton",
+            background=COLOR_VERDE,
+            foreground="black",
+            padding=6,
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("TButton",
+            background=[("active", COLOR_VERDE_OSCURO)]
+        )
+
+        # ---------------------
+        # LABELS
+        # ---------------------
+        style.configure("TLabel",
+            background=COLOR_FONDO,
+            foreground=COLOR_TEXTO
+        )
+
+        # ---------------------
+        # ENTRY / COMBOBOX
+        # ---------------------
+        style.configure("TEntry",
+            padding=4,
+            fieldbackground="white",
+            bordercolor=COLOR_VERDE
+        )
+        style.configure("TCombobox",
+            padding=4,
+            fieldbackground="white",
+            bordercolor=COLOR_VERDE
+        )
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", "white")],
+            selectbackground=[("readonly", COLOR_VERDE)],
+            selectforeground=[("readonly", "black")]
+        )
+
+        # ---------------------
+        # NOTEBOOK (Tabs)
+        # ---------------------
+        style.configure("TNotebook",
+            background=COLOR_FONDO,
+            tabmargins=[6, 4, 2, 0]
+        )
+        style.configure("TNotebook.Tab",
+            background="#E8F6D8",
+            padding=[10, 4],
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("TNotebook.Tab",
+            background=[("selected", COLOR_VERDE_OSCURO)],
+            foreground=[("selected", "white")]
+        )
+
+        # ---------------------
+        # TREEVIEW (tablas)
+        # ---------------------
+        style.configure("Treeview",
+            background="white",
+            foreground="black",
+            fieldbackground="white",
+            bordercolor=COLOR_VERDE_OSCURO,
+            rowheight=24
+        )
+        style.configure("Treeview.Heading",
+            background=COLOR_VERDE,
+            foreground="black",
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("Treeview.Heading",
+            background=[("active", COLOR_VERDE_OSCURO)]
+        )
+
         self.con = db_connection
         self.cursor = cursor
         # conexión y cursor para pedidos (base separada)
