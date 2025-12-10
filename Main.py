@@ -2250,9 +2250,9 @@ class SistemaContableApp:
         
         ttk.Button(frame_retenciones, text="Aplicar", command=self.filtrar_retenciones).grid(row=0, column=0, padx=500, sticky='w', pady=0)
 
-        ttk.Label(frame_retenciones, text="Estado = ").grid(row=0, column=0, padx=575, pady=10, sticky="w")
+        ttk.Label(frame_retenciones, text="Estado = ").grid(row=0, column=0, padx=600, pady=10, sticky="w")
         self.lbl_resultado_estado = ttk.Label(frame_retenciones, text="?")
-        self.lbl_resultado_estado.grid(row=0, column=0, padx=625, pady=10, sticky="w")
+        self.lbl_resultado_estado.grid(row=0, column=0, padx=650, pady=10, sticky="w")
 
         columns = ("id", "proveedor", "subtotal", "retencion", "total")
         self.retenciones_table = ttk.Treeview(frame_retenciones, columns=columns, show="headings")
@@ -2276,7 +2276,7 @@ class SistemaContableApp:
         self.lbl_resultado.grid(row=5, column=0, padx=100, pady=0, sticky='w')
 
         self.boton_pagar = ttk.Button(frame_retenciones, text="Pagar", command=self.pagar_retencion)
-        self.boton_pagar.grid(row=5, column=0, padx=155, sticky='w', pady=0)
+        self.boton_pagar.grid(row=5, column=0, padx=180, sticky='w', pady=0)
         self.boton_pagar.grid_remove()
    
     def crear_tab_mod_pedidos(self):
@@ -2305,7 +2305,7 @@ class SistemaContableApp:
         btn_modificar.grid(row=2, column=0, padx=10, pady=10, sticky="nw")
 
         btn_factura = ttk.Button(frame, text="Ver Factura", command=self.ver_factura_pedido)
-        btn_factura.grid(row=2, column=0, padx=10, pady=40, sticky="nw")
+        btn_factura.grid(row=2, column=0, padx=115, pady=10, sticky="nw")
 
 
     def cargar_facturas(self):
