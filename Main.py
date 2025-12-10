@@ -838,9 +838,9 @@ class SistemaContableApp:
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
-            r7.config(text=a, background="WHITE", borderwidth=2, relief="solid")
-            r8.config(text=b, background="WHITE", borderwidth=2, relief="solid")
-            r9.config(text=c, background="WHITE", borderwidth=2, relief="solid")
+            r7.config(text=a)
+            r8.config(text=b)
+            r9.config(text=c)
 
  #--------------Analizar posible proveedores-------------       
         def proveedores():
@@ -855,18 +855,18 @@ class SistemaContableApp:
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin pedidos recientes", "No hay datos recientemente registrados que analizar")
                 return
-            r1.config(text=a, background="WHITE", borderwidth=2, relief="solid")
-            r2.config(text=b, background="WHITE", borderwidth=2, relief="solid")
-            r3.config(text=c, background="WHITE", borderwidth=2, relief="solid")
+            r1.config(text=a)
+            r2.config(text=b)
+            r3.config(text=c)
 
 #--------------Análisis general de los gastos-----------------
         def general():
             (a,b,c) = analisis.general()
             if (a,b,c) == (-1,-1,-1):
                 messagebox.showwarning("Sin datos", "No hay datos que actualizar")
-            r4.config(text=a, background="WHITE", borderwidth=2, relief="solid")
-            r5.config(text=b, background="WHITE", borderwidth=2, relief="solid")
-            r6.config(text=c, background="WHITE", borderwidth=2, relief="solid")
+            r4.config(text=a)
+            r5.config(text=b)
+            r6.config(text=c)
 
 #---------------------Modelar la interfaz---------------------
         frame = ttk.Frame(self.notebook)
@@ -894,15 +894,15 @@ class SistemaContableApp:
         ttk.Label(fb, text="Comportamiento en los\núltimos seis meses:", anchor="center").place(rely=0.5, relx=0.7, relheight=0.08, relwidth=0.2)
         ttk.Label(fb, text="Posible comportamiento futuro:", anchor="center").place(rely=0.75, relx=0.7, relheight=0.08, relwidth=0.2)
 
-        r1 = ttk.Label(fb, anchor="center")
-        r2 = ttk.Label(fb, anchor="center")
-        r3 = ttk.Label(fb, anchor="center")
-        r4 = ttk.Label(fb, anchor="center")
-        r5 = ttk.Label(fb, anchor="center")
-        r6 = ttk.Label(fb, anchor="center")
-        r7 = ttk.Label(fb, anchor="center")
-        r8 = ttk.Label(fb, anchor="center")
-        r9 = ttk.Label(fb, anchor="center")
+        r1 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r2 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r3 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r4 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r5 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r6 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r7 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r8 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
+        r9 = ttk.Label(fb, anchor="center", background="WHITE", borderwidth=2, relief="solid")
 
         r1.place(rely=0.33, relx=0.1, relheight=0.15, relwidth=0.2)
         r2.place(rely=0.58, relx=0.1, relheight=0.15, relwidth=0.2)
@@ -914,17 +914,6 @@ class SistemaContableApp:
         r8.place(rely=0.58, relx=0.7, relheight=0.15, relwidth=0.2)
         r9.place(rely=0.83, relx=0.7, relheight=0.15, relwidth=0.2)
 
-    """
-        r1.place(rely=0.25, relx=0.1, relheight=0.23, relwidth=0.2)
-        r2.place(rely=0.5, relx=0.1, relheight=0.23, relwidth=0.2)
-        r3.place(rely=0.75, relx=0.1, relheight=0.23, relwidth=0.2)
-        r4.place(rely=0.25, relx=0.4, relheight=0.23, relwidth=0.2)
-        r5.place(rely=0.5, relx=0.4, relheight=0.23, relwidth=0.2)
-        r6.place(rely=0.75, relx=0.4, relheight=0.23, relwidth=0.2)
-        r7.place(rely=0.25, relx=0.7, relheight=0.23, relwidth=0.2)
-        r8.place(rely=0.5, relx=0.7, relheight=0.23, relwidth=0.2)
-        r9.place(rely=0.75, relx=0.7, relheight=0.23, relwidth=0.2)
-    """
     #--------------------------
     #TAB: Gráficos
     #--------------------------
@@ -941,7 +930,7 @@ class SistemaContableApp:
         
 #-----------Mostrar gráfico del comportamiento de un producto-----------     
         def grafico_producto():
-            for widget in self.grafico.winfo_children():
+            for widget in self.grafico1.winfo_children():
                 widget.destroy()
             producto = self.entrada_producto.get().strip()
             if producto == "":
@@ -961,14 +950,14 @@ class SistemaContableApp:
             figura = Figure(figsize=(5, 4), dpi=100)
             graficar = figura.add_subplot(111)
             graficar.plot(meses, valores)
-            graficar.set_title("Evolución precio {}".format(producto))
-            canvas = FigureCanvasTkAgg(figura, master=self.grafico)
+            graficar.set_title("Evolución precio {}($)".format(producto))
+            canvas = FigureCanvasTkAgg(figura, master=self.grafico1)
             canvas.draw()
             canvas.get_tk_widget().pack()
         
 #-----------Mostrar un grafico de los gastos generales-----------     
         def grafico_gastos():
-            for widget in self.grafico.winfo_children():
+            for widget in self.grafico3.winfo_children():
                 widget.destroy()          
             meses, valores = analisis.historial_gasto()
             if meses == 0:
@@ -980,17 +969,17 @@ class SistemaContableApp:
             figura = Figure(figsize=(5, 4), dpi=100)
             graficar = figura.add_subplot(111)
             graficar.plot(meses, valores)
-            graficar.set_title("Historial de gastos")
+            graficar.set_title("Historial de gastos(M$)")
             graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
             graficar.yaxis.set_major_formatter(
-                mticker.FuncFormatter(lambda x, pos: f"{x/1_000_000:.1f}M$"))
-            canvas = FigureCanvasTkAgg(figura, master=self.grafico)
+                mticker.FuncFormatter(lambda x, _: f"{x/1_000_000:.1f}"))
+            canvas = FigureCanvasTkAgg(figura, master=self.grafico3)
             canvas.draw()
             canvas.get_tk_widget().pack()
 
 #-----------Mostrar un gráfico de los impuestos pagados-----------     
         def grafico_impuesto():
-            for widget in self.grafico.winfo_children():
+            for widget in self.grafico2.winfo_children():
                 widget.destroy()          
             meses, valores = analisis.historial_impuesto()
             if meses == 0:
@@ -1002,27 +991,31 @@ class SistemaContableApp:
             figura = Figure(figsize=(5, 4), dpi=100)
             graficar = figura.add_subplot(111)
             graficar.plot(meses, valores)
-            graficar.set_title("Historial de gastos")
+            graficar.set_title("Historial de impuestos(M$)")
             graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
             graficar.yaxis.set_major_formatter(
-                mticker.FuncFormatter(lambda x, pos: f"{x/1_000_000:.1f}M$"))
-            canvas = FigureCanvasTkAgg(figura, master=self.grafico)
+                mticker.FuncFormatter(lambda x, _: f"{x/1_000_000:.1f}"))
+            canvas = FigureCanvasTkAgg(figura, master=self.grafico2)
             canvas.draw()
             canvas.get_tk_widget().pack()
 
 #-----------Modelar interfaz-----------
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Gráficos")
-        self.grafico = ttk.Label(frame, background="WHITE")
-        self.grafico.place(rely=0.2, relwidth=1, relheight=0.80)
+        self.grafico1 = ttk.Label(frame, background="WHITE", borderwidth=2, relief="solid")
+        self.grafico2 = ttk.Label(frame, background="WHITE", borderwidth=2, relief="solid")
+        self.grafico3 = ttk.Label(frame, background="WHITE", borderwidth=2, relief="solid")
+        self.grafico1.place(rely=0.2, relx=0.01, relwidth=0.32, relheight=0.60)
+        self.grafico2.place(rely=0.2, relx=0.34, relwidth=0.32, relheight=0.60)
+        self.grafico3.place(rely=0.2, relx=0.67, relwidth=0.32, relheight=0.60)
         boton1 = ttk.Button(frame, text="Precios de productos", command=grafico_producto)
-        boton1.place(rely=0.05, relx=0.11, relheight=0.07, relwidth=0.15)
+        boton1.place(rely=0.05, relx=0.13, relheight=0.07, relwidth=0.16)
         self.entrada_producto = ttk.Combobox(frame, values=lista(), state="readonly", width=30)
-        self.entrada_producto.place(rely=0.13, relx=0.11, relheight=0.04, relwidth=0.15)
+        self.entrada_producto.place(rely=0.13, relx=0.13, relheight=0.04, relwidth=0.16)
         boton2 = ttk.Button(frame, text="Impuestos", command=grafico_impuesto)
-        boton2.place(rely=0.05, relx=0.37, relheight=0.07, relwidth=0.15)
+        boton2.place(rely=0.05, relx=0.42, relheight=0.07, relwidth=0.16)
         boton3 = ttk.Button(frame, text="Gasto", command=grafico_gastos)
-        boton3.place(rely=0.05, relx=0.63, relheight=0.07, relwidth=0.15)
+        boton3.place(rely=0.05, relx=0.71, relheight=0.07, relwidth=0.16)
 
     # -------------------------
     # TAB: Revisión de Gastos Mensuales
