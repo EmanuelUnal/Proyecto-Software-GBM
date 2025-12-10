@@ -3,10 +3,10 @@ import tkinter as tk
 import analisis
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
-from datetime import datetime
-#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-#from matplotlib.figure import Figure
-#import matplotlib.ticker as mticker
+from datetime import datetime, date
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import matplotlib.ticker as mticker
 import sys, os
 import shutil
 
@@ -305,12 +305,12 @@ class SistemaContableApp:
             self.crear_tab_generar_pedido()
             self.crear_tab_firma()
             self.crear_tab_cancelar_pedido()
-            self.crear_tab_comparar_pedidos()
         elif rol == "Contadora":
             self.crear_tab_analisis()
             self.crear_tab_graf()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
+            self.crear_tab_mod_pedidos()
             
 
 
@@ -1281,353 +1281,7 @@ class SistemaContableApp:
             pass
         facturas = self.cargar_facturas()
         self._refresh_productos_table(facturas)
-    
-    # -------------------------
-    # TAB: Comparar Pedidos
-    # -------------------------
 
-    def crear_tab_comparar_pedidos(self):
-        frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="Comparar Pedido")
-    
-    
-        # Controles de búsqueda
-        ttk.Label(frame, text="Código (Pedido o Factura):").grid(row=0, column=0, padx=10, pady=8, sticky="w")
-        self.entry_buscar_codigo = ttk.Entry(frame, width=30)
-        self.entry_buscar_codigo.grid(row=0, column=1, padx=6, pady=8, sticky="w")
-        ttk.Button(frame, text="Buscar", command=self._buscar_por_codigo).grid(row=0, column=2, padx=6, pady=8)
-        ttk.Button(frame, text="Limpiar", command=self._limpiar_comparar_pedidos).grid(row=0, column=3, padx=6, pady=8)
-
-        # Botón para cancelar pedido desde esta pestaña (inicialmente deshabilitado)
-        self.btn_cancelar_desde_comparar = ttk.Button(frame, text="Cancelar Pedido", command=self._cancelar_pedido_desde_comparar, state="disabled")
-        self.btn_cancelar_desde_comparar.grid(row=0, column=4, padx=6, pady=8)
-
-        # Tabla de Pedido (si existe en pedidos.db)
-        pedido_box = ttk.LabelFrame(frame, text="Pedido", padding=6)
-        pedido_box.grid(row=1, column=0, columnspan=5, sticky="nsew", padx=10, pady=(0,10))
-        cols_p = ("codigo", "proveedor", "producto", "cantidad", "fecha", "estado")
-        self.tabla_comparar_pedidos = ttk.Treeview(pedido_box, columns=cols_p, show="headings", height=6)
-        for c, t in zip(cols_p, ["Código","Proveedor","Producto","Cantidad","Fecha","Estado"]):
-            self.tabla_comparar_pedidos.heading(c, text=t)
-            self.tabla_comparar_pedidos.column(c, width=100, anchor="center")
-        self.tabla_comparar_pedidos.grid(row=0, column=0, sticky="nsew")
-        vsb1 = ttk.Scrollbar(pedido_box, orient="vertical", command=self.tabla_comparar_pedidos.yview)
-        self.tabla_comparar_pedidos.configure(yscrollcommand=vsb1.set)
-        vsb1.grid(row=0, column=1, sticky="ns")
-        # tag visual para discrepancias / cancelado
-        self.tabla_comparar_pedidos.tag_configure("discrep", background="#fff2cc")  # amarillo claro
-        self.tabla_comparar_pedidos.tag_configure("cancelado", background="#ffd7d7")  # rojo claro
-
-        # Tabla de Facturas (ahora con campos de precios para comparar)
-        factura_box = ttk.LabelFrame(frame, text="Facturas relacionadas", padding=6)
-        factura_box.grid(row=2, column=0, columnspan=5, sticky="nsew", padx=10, pady=(0,10))
-        cols_f = ("proveedor", "fecha", "producto", "cantidad", "valoru", "iva", "retencion", "valort", "codigo_factura", "codigo_pedido")
-        self.tabla_comparar_facturas = ttk.Treeview(factura_box, columns=cols_f, show="headings", height=8)
-        for c, t in zip(cols_f, ["Proveedor","Fecha","Producto","Cantidad","ValorU","Iva(%)","Retención","ValorT","Código Factura","Código Pedido"]):
-            self.tabla_comparar_facturas.heading(c, text=t)
-            self.tabla_comparar_facturas.column(c, width=110, anchor="center")
-        self.tabla_comparar_facturas.grid(row=0, column=0, sticky="nsew")
-        vsb2 = ttk.Scrollbar(factura_box, orient="vertical", command=self.tabla_comparar_facturas.yview)
-        self.tabla_comparar_facturas.configure(yscrollcommand=vsb2.set)
-        vsb2.grid(row=0, column=1, sticky="ns")
-        self.tabla_comparar_facturas.tag_configure("discrep", background="#fff2cc")
-        self.tabla_comparar_facturas.tag_configure("cancelado", background="#ffd7d7")
-
-        # permitir expandir
-        frame.grid_rowconfigure(1, weight=1)
-        frame.grid_rowconfigure(2, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
-
-    def _limpiar_comparar_pedidos(self):
-        try:
-            self.entry_buscar_codigo.delete(0, tk.END)
-        except Exception:
-            pass
-        # desactivar botón cancelar
-        try:
-            self.btn_cancelar_desde_comparar.config(state="disabled")
-        except Exception:
-            pass
-        for t in (self.tabla_comparar_pedidos, self.tabla_comparar_facturas):
-            for iid in t.get_children():
-                t.delete(iid)
-
-    def _buscar_por_codigo(self):
-        codigo = self.entry_buscar_codigo.get().strip()
-        if not codigo:
-            messagebox.showwarning("Buscar", "Ingrese un código de pedido o factura.")
-            return
-
-        # Limpiar vistas
-        self._limpiar_comparar_pedidos()
-
-        # Buscar en pedidos.db (si disponible) por código de pedido exacto
-        found_pedido = False
-        ped_rows = []  # guardar para comparación
-        try:
-            if self.ped_cursor:
-                self.ped_cursor.execute("""
-                    SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
-                    FROM pedidos p
-                    JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
-                    WHERE p.codigo_pedido = ?
-                """, (codigo,))
-                ped_rows = self.ped_cursor.fetchall()
-                for r in ped_rows:
-                    iid = self.tabla_comparar_pedidos.insert("", "end", values=r)
-                    found_pedido = True
-        except Exception:
-            # No hay DB de pedidos o error en consulta: se ignora la sección de pedidos
-            ped_rows = []
-
-        # Buscar facturas relacionadas: por codigo_pedido o por codigo_factura igual al input
-        fact_rows = []
-        try:
-            # traer campos de precios/iva/retencion para comparar
-            self.cursor.execute("""
-                SELECT proveedor, fecha, producto, cantidad, valoru, iva, retencion, valort, codigo_factura, codigo_pedido
-                FROM facturas
-                WHERE codigo_pedido = ? OR codigo_factura = ?
-                ORDER BY fecha DESC
-            """, (codigo, codigo))
-            fact_rows = self.cursor.fetchall()
-            for fr in fact_rows:
-                self.tabla_comparar_facturas.insert("", "end", values=fr)
-        except Exception as e:
-            messagebox.showerror("Error BD", f"No se pudo consultar facturas:\n{e}")
-            return
-
-        # Comparar facturas vs pedido_items (producto, cantidad, valoru, valort, iva, retencion)
-        discrepancies = []  # lista de tuplas (codigo_pedido, producto, campo, pedido_val, factura_val, pedido_iid, factura_iid)
-        try:
-            # construir mapa de pedido por (codigo_pedido, producto) -> (cantidad, iid)
-            ped_map = {}
-            for iid in self.tabla_comparar_pedidos.get_children():
-                vals = self.tabla_comparar_pedidos.item(iid, "values")
-                if not vals or len(vals) < 4:
-                    continue
-                key = (vals[0], vals[2])  # codigo_pedido, producto
-                ped_map[key] = {"cantidad": int(vals[3]) if vals[3] != "" else 0, "iid": iid}
-
-            # iterar facturas y comparar con pedido_map (usar codigo_pedido desde la factura si existe)
-            for fact_iid in self.tabla_comparar_facturas.get_children():
-                fvals = self.tabla_comparar_facturas.item(fact_iid, "values")
-                if not fvals or len(fvals) < 10:
-                    continue
-                proveedor, fecha, producto, cantidad_f, valoru_f, iva_f, retencion_f, valort_f, codigo_factura, codigo_ped = fvals
-                cantidad_f = int(cantidad_f) if cantidad_f not in (None, "") else 0
-                try:
-                    valoru_f = float(valoru_f) if valoru_f not in (None, "") else 0.0
-                except Exception:
-                    valoru_f = 0.0
-                try:
-                    iva_f = float(iva_f) if iva_f not in (None, "") else 0.0
-                except Exception:
-                    iva_f = 0.0
-                try:
-                    retencion_f = float(retencion_f) if retencion_f not in (None, "") else 0.0
-                except Exception:
-                    retencion_f = 0.0
-                try:
-                    valort_f = float(valort_f) if valort_f not in (None, "") else 0.0
-                except Exception:
-                    valort_f = 0.0
-
-                # buscar pedido correspondiente: preferir codigo_ped de la factura, si no usar cualquier pedido en ped_map con mismo producto
-                candidate_keys = []
-                if codigo_ped:
-                    candidate_keys.append((codigo_ped, producto))
-                else:
-                    # buscar cualquier pedido con ese producto
-                    candidate_keys += [k for k in ped_map.keys() if k[1] == producto]
-
-                matched = False
-                for key in candidate_keys:
-                    if key in ped_map:
-                        matched = True
-                        ped_info = ped_map[key]
-                        cantidad_p = ped_info["cantidad"]
-                        ped_iid = ped_info["iid"]
-                        # comparar campos
-                        if cantidad_p != cantidad_f:
-                            discrepancies.append((key[0], producto, "cantidad", cantidad_p, cantidad_f, ped_iid, fact_iid))
-                        if any([valoru_f != 0.0, iva_f != 0.0, retencion_f != 0.0, valort_f != 0.0]):
-                            # agrupar las diferencias por campo para el texto de justificación
-                            if valoru_f != 0.0:
-                                discrepancies.append((key[0], producto, "valoru", "(no_en_pedido)", valoru_f, ped_iid, fact_iid))
-                            if iva_f != 0.0:
-                                discrepancies.append((key[0], producto, "iva", "(no_en_pedido)", iva_f, ped_iid, fact_iid))
-                            if retencion_f != 0.0:
-                                discrepancies.append((key[0], producto, "retencion", "(no_en_pedido)", retencion_f, ped_iid, fact_iid))
-                            if valort_f != 0.0:
-                                discrepancies.append((key[0], producto, "valort", "(no_en_pedido)", valort_f, ped_iid, fact_iid))
-                        break
-
-                if not matched:
-                    # factura con producto sin pedido correspondiente: marcar discrepancia
-                    discrepancies.append((codigo_ped or "N/A", producto, "sin_pedido", "(sin_pedido)", f"Factura {codigo_factura}", None, fact_iid))
-
-            # aplicar resaltado según discrepancias encontradas
-            if discrepancies:
-                for d in discrepancies:
-                    _, _, _, _, _, ped_iid, fact_iid = d
-                    if ped_iid:
-                        try:
-                            self.tabla_comparar_pedidos.item(ped_iid, tags=("discrep",))
-                        except Exception:
-                            pass
-                    if fact_iid:
-                        try:
-                            self.tabla_comparar_facturas.item(fact_iid, tags=("discrep",))
-                        except Exception:
-                            pass
-
-                # habilitar botón para cancelar con justificación
-                try:
-                    self.btn_cancelar_desde_comparar.config(state="normal")
-                except Exception:
-                    pass
-
-        except Exception:
-            # en caso de cualquier error en la comparación, no impedir que el usuario vea resultados
-            pass
-
-        # Si se encontraron facturas y no se encontró el pedido, intentar cargar el pedido asociado a partir de codigo_pedido de la/s factura/s
-        try:
-            if fact_rows and not found_pedido and self.ped_cursor:
-                codigo_peds = {fr[9] for fr in fact_rows if fr[9]}  # index 9 = codigo_pedido
-                for cp in codigo_peds:
-                    if not cp:
-                        continue
-                    self.ped_cursor.execute("""
-                        SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
-                        FROM pedidos p
-                        JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
-                        WHERE p.codigo_pedido = ?
-                    """, (cp,))
-                    ped_rows2 = self.ped_cursor.fetchall()
-                    for pr in ped_rows2:
-                        self.tabla_comparar_pedidos.insert("", "end", values=pr)
-                        found_pedido = True
-        except Exception:
-            pass
-
-        # Si no se encontró pedido ni factura
-        if not found_pedido and not self.tabla_comparar_facturas.get_children():
-            messagebox.showinfo("Sin resultados", "No se encontró pedido ni factura con ese código.")
-        else:
-            messagebox.showinfo("Resultado", "Búsqueda completada. Ver tablas para detalles.")
-        # guardar últimas discrepancias en memoria para uso al cancelar
-        self._ultima_discrepancias = discrepancies
-
-    def _tabla_pedidos(self):
-        # tablas en DB separada (pedidos.db)
-        self.ped_cursor.execute("""
-            CREATE TABLE IF NOT EXISTS pedidos (
-                codigo_pedido TEXT PRIMARY KEY,
-                proveedor TEXT,
-                fecha TEXT,
-                estado TEXT
-            )
-        """)
-        self.ped_cursor.execute("""
-            CREATE TABLE IF NOT EXISTS pedido_items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                codigo_pedido TEXT,
-                producto TEXT,
-                cantidad INTEGER,
-                FOREIGN KEY(codigo_pedido) REFERENCES pedidos(codigo_pedido)
-            )
-        """)
-        self.ped_con.commit()
-
-        # sincronizar pedidos desde facturas (si existen códigos de pedido)
-        try:
-            self.cursor.execute("SELECT DISTINCT codigo_pedido, proveedor, fecha FROM facturas WHERE codigo_pedido IS NOT NULL AND codigo_pedido != ''")
-            for codigo, proveedor, fecha in self.cursor.fetchall():
-                self.ped_cursor.execute("SELECT 1 FROM pedidos WHERE codigo_pedido = ?", (codigo,))
-                if not self.ped_cursor.fetchone():
-                    self.ped_cursor.execute("INSERT INTO pedidos (codigo_pedido, proveedor, fecha, estado) VALUES (?, ?, ?, ?)",
-                                            (codigo, proveedor or "", fecha or "", "Pendiente"))
-                # items desde facturas
-                self.cursor.execute("SELECT producto, cantidad FROM facturas WHERE codigo_pedido = ?", (codigo,))
-                for producto, cantidad in self.cursor.fetchall():
-                    self.ped_cursor.execute("""
-                        SELECT 1 FROM pedido_items WHERE codigo_pedido = ? AND producto = ? AND cantidad = ?
-                    """, (codigo, producto, cantidad))
-                    if not self.ped_cursor.fetchone():
-                        self.ped_cursor.execute("INSERT INTO pedido_items (codigo_pedido, producto, cantidad) VALUES (?, ?, ?)",
-                                                (codigo, producto, cantidad))
-            self.ped_con.commit()
-        except Exception:
-            pass
-
-    def _cancelar_pedido_desde_comparar(self):
-        # obtener últimas discrepancias registradas
-        disc = getattr(self, "_ultima_discrepancias", []) or []
-        if not disc:
-            messagebox.showwarning("Sin discrepancias", "No hay discrepancias registradas para cancelar.")
-            return
-
-        # obtener códigos de pedido implicados
-        pedidos_involucrados = sorted({d[0] for d in disc if d[0] and d[0] != "N/A"})
-        if not pedidos_involucrados:
-            for iid in self.tabla_comparar_pedidos.get_children():
-                vals = self.tabla_comparar_pedidos.item(iid, "values")
-                if vals and vals[0]:
-                    pedidos_involucrados.append(vals[0])
-            pedidos_involucrados = list(dict.fromkeys(pedidos_involucrados))
-
-        if not pedidos_involucrados:
-            messagebox.showwarning("Sin pedidos", "No se pudo determinar un código de pedido para cancelar.")
-            return
-
-        # elegir pedido si hay varios
-        if len(pedidos_involucrados) == 1:
-            codigo_seleccionado = pedidos_involucrados[0]
-        else:
-            sel = tk.simpledialog.askstring("Elegir pedido", f"Se encontraron discrepancias en varios pedidos: {', '.join(pedidos_involucrados)}\nIngrese el código del pedido a cancelar:")
-            if not sel:
-                return
-            codigo_seleccionado = sel.strip()
-
-        # confirmar cancelación (sin justificación)
-        if not messagebox.askyesno("Confirmar Cancelación", f"¿Desea marcar el pedido {codigo_seleccionado} como Cancelado?"):
-            return
-
-        try:
-            self.ped_cursor.execute("UPDATE pedidos SET estado = ? WHERE codigo_pedido = ?", ("Cancelado", codigo_seleccionado))
-            self.ped_con.commit()
-
-            # actualizar visualmente filas en la tabla de comparar
-            for iid in self.tabla_comparar_pedidos.get_children():
-                vals = self.tabla_comparar_pedidos.item(iid, "values")
-                if vals and vals[0] == codigo_seleccionado:
-                    self.tabla_comparar_pedidos.item(iid, values=(vals[0], vals[1], vals[2], vals[3], vals[4], "Cancelado"), tags=("cancelado",))
-
-            # marcar facturas relacionadas visualmente
-            for iid in self.tabla_comparar_facturas.get_children():
-                vals = self.tabla_comparar_facturas.item(iid, "values")
-                if vals and len(vals) > 9 and vals[9] == codigo_seleccionado:
-                    self.tabla_comparar_facturas.item(iid, tags=("cancelado",))
-
-            # actualizar tabla_registro_pedidos si existe
-            try:
-                for rid in self.tabla_registro_pedidos.get_children():
-                    rvals = self.tabla_registro_pedidos.item(rid, "values")
-                    if rvals and rvals[0] == codigo_seleccionado:
-                        self.tabla_registro_pedidos.item(rid, values=(rvals[0], rvals[1], rvals[2], rvals[3], rvals[4], "Cancelado"))
-            except Exception:
-                pass
-
-            messagebox.showinfo("Pedido cancelado", f"Pedido {codigo_seleccionado} marcado como Cancelado.")
-            try:
-                self.btn_cancelar_desde_comparar.config(state="disabled")
-            except Exception:
-                pass
-
-        except Exception as e:
-            messagebox.showerror("Error BD", f"No se pudo actualizar el pedido:\n{e}")
 
     # -------------------------
     # TAB: Registrar Pedidos
@@ -2062,6 +1716,37 @@ class SistemaContableApp:
         self.boton_pagar = ttk.Button(frame_retenciones, text="Pagar", command=self.pagar_retencion)
         self.boton_pagar.grid(row=5, column=0, padx=155, sticky='w', pady=0)
         self.boton_pagar.grid_remove()
+
+    def crear_tab_mod_pedidos(self):
+        frame = ttk.Frame(self.notebook)
+        frame.grid_rowconfigure(2, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+        self.notebook.add(frame, text="Modificar Pedidos")
+
+        self.ped_cursor.execute("""
+            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+            FROM pedidos p
+            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+            ORDER BY p.fecha DESC, p.codigo_pedido DESC
+        """)
+        rows = self.ped_cursor.fetchall()
+        columnas = ("codigo", "proveedor", "producto", "cantidad", "fecha", "estado")
+        self.tabla_mod_pedidos = ttk.Treeview(frame, columns=columnas, show="headings", height=20)
+        for col, texto in zip(columnas, ["Código", "Proveedor", "Producto", "Cantidad", "Fecha", "Estado"]):
+            self.tabla_mod_pedidos.heading(col, text=texto)
+            self.tabla_mod_pedidos.column(col, width=100, anchor="center")
+        self.tabla_mod_pedidos.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        for row in rows:
+            self.tabla_mod_pedidos.insert("", "end", values=row)
+        
+        btn_modificar = ttk.Button(frame, text="Modificar", command=self.modificar_pedido)
+        btn_modificar.grid(row=2, column=0, padx=10, pady=10, sticky="nw")
+
+        btn_factura = ttk.Button(frame, text="Ver Factura", command=self.ver_factura_pedido)
+        btn_factura.grid(row=2, column=0, padx=10, pady=40, sticky="nw")
+
+
+        
    
     def cargar_facturas(self):
         # Selecciona las columnas en el mismo orden que las columnas de la Treeview 'productos_table'
@@ -2118,6 +1803,189 @@ class SistemaContableApp:
         except:
             messagebox.showerror("Error", "No se pudo actualizar el estado de la retención.")
 
+    def modificar_pedido(self):
+        seleccion = self.tabla_mod_pedidos.selection()
+
+        if not seleccion:
+            messagebox.showwarning("Seleccionar", "Por favor selecciona un pedido.")
+            return
+
+        item = self.tabla_mod_pedidos.item(seleccion)
+        valores = item["values"]   # [codigo, proveedor, producto, cantidad, fecha, estado]
+
+        codigo = valores[0]
+
+        ventana = tk.Toplevel()
+        ventana.title(f"Modificar Pedido {codigo}")
+        ventana.geometry("350x330")
+
+        labels = ["Proveedor", "Producto", "Cantidad", "Fecha (YYYY-MM-DD)", "Estado"]
+        self.entry_vars = []
+        self.estado_combobox = None
+
+        for i, label in enumerate(labels, start=1):
+            ttk.Label(ventana, text=label).grid(row=i, column=0, padx=10, pady=5, sticky="w")
+
+            # Campos normales (todo excepto estado)
+            if label != "Estado":
+                var = tk.StringVar(value=valores[i])
+                entry = ttk.Entry(ventana, textvariable=var)
+                entry.grid(row=i, column=1, padx=10, pady=5)
+                self.entry_vars.append(var)
+            else:
+                # Combobox para ESTADO
+                estado_var = tk.StringVar()
+                self.estado_combobox = ttk.Combobox(
+                    ventana,
+                    textvariable=estado_var,
+                    values=["Pendiente", "Completado"],
+                    state="readonly"
+                )
+                estado_var.set(valores[i])  # valor actual
+                self.estado_combobox.grid(row=i, column=1, padx=10, pady=5)
+
+        # Botón Guardar
+        ttk.Button(
+            ventana,
+            text="Guardar Cambios",
+            command=lambda: self.guardar_cambios_pedido(codigo, ventana)
+        ).grid(row=10, column=0, columnspan=2, pady=15)
+
+
+    def guardar_cambios_pedido(self, codigo_pedido, ventana):
+        proveedor, producto, cantidad_str, fecha_str = [v.get() for v in self.entry_vars]
+        estado = self.estado_combobox.get()
+
+        # === VALIDACION DE ESTADO ===
+        if estado not in ["Pendiente", "Completado"]:
+            messagebox.showerror("Error", "Estado inválido. Solo se permite: Pendiente o Completado.")
+            return
+
+        # === VALIDACION DE CANTIDAD ===
+        try:
+            cantidad = int(cantidad_str)
+            if cantidad < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad debe ser un número entero mayor o igual a 0.")
+            return
+
+        # === VALIDACION DE FECHA ===
+        #from datetime import datetime, date
+
+        try:
+            fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+
+            hoy = date.today()
+
+            # Calcular primer día del mes siguiente
+            if hoy.month == 12:
+                limite = date(hoy.year + 1, 1, 1)
+            else:
+                limite = date(hoy.year, hoy.month + 1, 1)
+
+            if fecha >= limite:
+                messagebox.showerror(
+                    "Error",
+                    f"La fecha no puede ser mayor a {limite}."
+                )
+                return
+
+        except ValueError:
+            messagebox.showerror("Error", "La fecha debe tener el formato YYYY-MM-DD y ser válida.")
+            return
+
+        # === SI TODO ES CORRECTO, ACTUALIZAR BD ===
+        try:
+            self.ped_cursor.execute("""
+                UPDATE pedidos
+                SET proveedor = ?, fecha = ?, estado = ?
+                WHERE codigo_pedido = ?
+            """, (proveedor, fecha_str, estado, codigo_pedido))
+
+            self.ped_cursor.execute("""
+                UPDATE pedido_items
+                SET producto = ?, cantidad = ?
+                WHERE codigo_pedido = ?
+            """, (producto, cantidad, codigo_pedido))
+
+            # Confirmar cambios
+            self.ped_cursor.connection.commit()
+
+            # Refrescar tabla
+            self.refrescar_tabla_mod_pedidos()
+
+            messagebox.showinfo("Éxito", "Pedido actualizado correctamente.")
+            ventana.destroy()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo actualizar:\n{e}")
+
+
+
+    def refrescar_tabla_mod_pedidos(self):
+        # Borrar contenido actual
+        for item in self.tabla_mod_pedidos.get_children():
+            self.tabla_mod_pedidos.delete(item)
+
+        # Cargar datos de nuevo
+        self.ped_cursor.execute("""
+            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+            FROM pedidos p
+            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+            ORDER BY p.fecha DESC, p.codigo_pedido DESC
+        """)
+        
+        rows = self.ped_cursor.fetchall()
+        for row in rows:
+            self.tabla_mod_pedidos.insert("", "end", values=row)
+
+
+    def ver_factura_pedido(self):
+        seleccion = self.tabla_mod_pedidos.selection()
+
+        if not seleccion:
+            messagebox.showwarning("Seleccionar", "Por favor selecciona un pedido.")
+            return
+
+        item = self.tabla_mod_pedidos.item(seleccion)
+        valores = item["values"]
+        codigo_pedido = valores[0]  # primera columna
+
+        # Buscar las facturas asociadas en contabilidad_lechera.db
+        self.cursor.execute("""
+            SELECT codigo_factura, fecha, proveedor, producto, cantidad, subtotal, total
+            FROM facturas
+            WHERE codigo_pedido = ?
+        """, (codigo_pedido,))
+
+        facturas = self.cursor.fetchall()
+
+        if not facturas:
+            messagebox.showinfo("Sin facturas", f"El pedido {codigo_pedido} no tiene facturas asociadas.")
+            return
+
+        # === Ventana emergente ===
+        ventana = tk.Toplevel()
+        ventana.title(f"Facturas del pedido {codigo_pedido}")
+        ventana.geometry("700x300")
+
+        columnas = ("codigo_factura", "fecha", "proveedor", "producto", "cantidad", "subtotal", "total")
+        tabla = ttk.Treeview(ventana, columns=columnas, show="headings", height=10)
+
+        headers = ["Código Factura", "Fecha", "Proveedor", "Producto", "Cantidad", "Subtotal", "Total"]
+
+        for col, txt in zip(columnas, headers):
+            tabla.heading(col, text=txt)
+            tabla.column(col, width=100)
+
+        tabla.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Insertar datos
+        for f in facturas:
+            tabla.insert("", "end", values=f)
+
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
