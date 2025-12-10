@@ -3,7 +3,7 @@ import tkinter as tk
 import analisis
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date
 #from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #from matplotlib.figure import Figure
 #import matplotlib.ticker as mticker
@@ -311,6 +311,7 @@ class SistemaContableApp:
             self.crear_tab_graf()
             self.crear_tab_retenciones()
             self.crear_tab_revision_de_gastos()
+            self.crear_tab_mod_pedidos()
             
 
 
@@ -2063,6 +2064,35 @@ class SistemaContableApp:
         self.boton_pagar.grid(row=5, column=0, padx=155, sticky='w', pady=0)
         self.boton_pagar.grid_remove()
    
+    def crear_tab_mod_pedidos(self):
+        frame = ttk.Frame(self.notebook)
+        frame.grid_rowconfigure(2, weight=1)
+        frame.grid_columnconfigure(0, weight=1)
+        self.notebook.add(frame, text="Modificar Pedidos")
+
+        self.ped_cursor.execute("""
+            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+            FROM pedidos p
+            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+            ORDER BY p.fecha DESC, p.codigo_pedido DESC
+        """)
+        rows = self.ped_cursor.fetchall()
+        columnas = ("codigo", "proveedor", "producto", "cantidad", "fecha", "estado")
+        self.tabla_mod_pedidos = ttk.Treeview(frame, columns=columnas, show="headings", height=20)
+        for col, texto in zip(columnas, ["Código", "Proveedor", "Producto", "Cantidad", "Fecha", "Estado"]):
+            self.tabla_mod_pedidos.heading(col, text=texto)
+            self.tabla_mod_pedidos.column(col, width=100, anchor="center")
+        self.tabla_mod_pedidos.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        for row in rows:
+            self.tabla_mod_pedidos.insert("", "end", values=row)
+        
+        btn_modificar = ttk.Button(frame, text="Modificar", command=self.modificar_pedido)
+        btn_modificar.grid(row=2, column=0, padx=10, pady=10, sticky="nw")
+
+        btn_factura = ttk.Button(frame, text="Ver Factura", command=self.ver_factura_pedido)
+        btn_factura.grid(row=2, column=0, padx=10, pady=40, sticky="nw")
+
+
     def cargar_facturas(self):
         # Selecciona las columnas en el mismo orden que las columnas de la Treeview 'productos_table'
         self.cursor.execute("""
@@ -2117,6 +2147,188 @@ class SistemaContableApp:
             self.filtrar_retenciones()
         except:
             messagebox.showerror("Error", "No se pudo actualizar el estado de la retención.")
+
+    def modificar_pedido(self):
+        seleccion = self.tabla_mod_pedidos.selection()
+
+        if not seleccion:
+            messagebox.showwarning("Seleccionar", "Por favor selecciona un pedido.")
+            return
+
+        item = self.tabla_mod_pedidos.item(seleccion)
+        valores = item["values"]   # [codigo, proveedor, producto, cantidad, fecha, estado]
+
+        codigo = valores[0]
+
+        ventana = tk.Toplevel()
+        ventana.title(f"Modificar Pedido {codigo}")
+        ventana.geometry("350x330")
+
+        labels = ["Proveedor", "Producto", "Cantidad", "Fecha (YYYY-MM-DD)", "Estado"]
+        self.entry_vars = []
+        self.estado_combobox = None
+
+        for i, label in enumerate(labels, start=1):
+            ttk.Label(ventana, text=label).grid(row=i, column=0, padx=10, pady=5, sticky="w")
+
+            # Campos normales (todo excepto estado)
+            if label != "Estado":
+                var = tk.StringVar(value=valores[i])
+                entry = ttk.Entry(ventana, textvariable=var)
+                entry.grid(row=i, column=1, padx=10, pady=5)
+                self.entry_vars.append(var)
+            else:
+                # Combobox para ESTADO
+                estado_var = tk.StringVar()
+                self.estado_combobox = ttk.Combobox(
+                    ventana,
+                    textvariable=estado_var,
+                    values=["Pendiente", "Completado"],
+                    state="readonly"
+                )
+                estado_var.set(valores[i])  # valor actual
+                self.estado_combobox.grid(row=i, column=1, padx=10, pady=5)
+
+        # Botón Guardar
+        ttk.Button(
+            ventana,
+            text="Guardar Cambios",
+            command=lambda: self.guardar_cambios_pedido(codigo, ventana)
+        ).grid(row=10, column=0, columnspan=2, pady=15)
+
+
+    def guardar_cambios_pedido(self, codigo_pedido, ventana):
+        proveedor, producto, cantidad_str, fecha_str = [v.get() for v in self.entry_vars]
+        estado = self.estado_combobox.get()
+
+        # === VALIDACION DE ESTADO ===
+        if estado not in ["Pendiente", "Completado"]:
+            messagebox.showerror("Error", "Estado inválido. Solo se permite: Pendiente o Completado.")
+            return
+
+        # === VALIDACION DE CANTIDAD ===
+        try:
+            cantidad = int(cantidad_str)
+            if cantidad < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad debe ser un número entero mayor o igual a 0.")
+            return
+
+        # === VALIDACION DE FECHA ===
+        #from datetime import datetime, date
+
+        try:
+            fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+
+            hoy = date.today()
+
+            # Calcular primer día del mes siguiente
+            if hoy.month == 12:
+                limite = date(hoy.year + 1, 1, 1)
+            else:
+                limite = date(hoy.year, hoy.month + 1, 1)
+
+            if fecha >= limite:
+                messagebox.showerror(
+                    "Error",
+                    f"La fecha no puede ser mayor a {limite}."
+                )
+                return
+
+        except ValueError:
+            messagebox.showerror("Error", "La fecha debe tener el formato YYYY-MM-DD y ser válida.")
+            return
+
+        # === SI TODO ES CORRECTO, ACTUALIZAR BD ===
+        try:
+            self.ped_cursor.execute("""
+                UPDATE pedidos
+                SET proveedor = ?, fecha = ?, estado = ?
+                WHERE codigo_pedido = ?
+            """, (proveedor, fecha_str, estado, codigo_pedido))
+
+            self.ped_cursor.execute("""
+                UPDATE pedido_items
+                SET producto = ?, cantidad = ?
+                WHERE codigo_pedido = ?
+            """, (producto, cantidad, codigo_pedido))
+
+            # Confirmar cambios
+            self.ped_cursor.connection.commit()
+
+            # Refrescar tabla
+            self.refrescar_tabla_mod_pedidos()
+
+            messagebox.showinfo("Éxito", "Pedido actualizado correctamente.")
+            ventana.destroy()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo actualizar:\n{e}")
+
+
+
+    def refrescar_tabla_mod_pedidos(self):
+        # Borrar contenido actual
+        for item in self.tabla_mod_pedidos.get_children():
+            self.tabla_mod_pedidos.delete(item)
+
+        # Cargar datos de nuevo
+        self.ped_cursor.execute("""
+            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+            FROM pedidos p
+            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+            ORDER BY p.fecha DESC, p.codigo_pedido DESC
+        """)
+        
+        rows = self.ped_cursor.fetchall()
+        for row in rows:
+            self.tabla_mod_pedidos.insert("", "end", values=row)
+
+
+    def ver_factura_pedido(self):
+        seleccion = self.tabla_mod_pedidos.selection()
+
+        if not seleccion:
+            messagebox.showwarning("Seleccionar", "Por favor selecciona un pedido.")
+            return
+
+        item = self.tabla_mod_pedidos.item(seleccion)
+        valores = item["values"]
+        codigo_pedido = valores[0]  # primera columna
+
+        # Buscar las facturas asociadas en contabilidad_lechera.db
+        self.cursor.execute("""
+            SELECT codigo_factura, fecha, proveedor, producto, cantidad, subtotal, total
+            FROM facturas
+            WHERE codigo_pedido = ?
+        """, (codigo_pedido,))
+
+        facturas = self.cursor.fetchall()
+
+        if not facturas:
+            messagebox.showinfo("Sin facturas", f"El pedido {codigo_pedido} no tiene facturas asociadas.")
+            return
+
+        # === Ventana emergente ===
+        ventana = tk.Toplevel()
+        ventana.title(f"Facturas del pedido {codigo_pedido}")
+        ventana.geometry("700x300")
+
+        columnas = ("codigo_factura", "fecha", "proveedor", "producto", "cantidad", "subtotal", "total")
+        tabla = ttk.Treeview(ventana, columns=columnas, show="headings", height=10)
+
+        headers = ["Código Factura", "Fecha", "Proveedor", "Producto", "Cantidad", "Subtotal", "Total"]
+
+        for col, txt in zip(columnas, headers):
+            tabla.heading(col, text=txt)
+            tabla.column(col, width=100)
+
+        tabla.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Insertar datos
+        for f in facturas:
+            tabla.insert("", "end", values=f)
 
 
 if __name__ == "__main__":
