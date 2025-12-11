@@ -2149,7 +2149,7 @@ class SistemaContableApp:
             # Proveedores únicos
             self.ped_cursor.execute("SELECT DISTINCT proveedor FROM pedidos")
             proveedores = [row[0] for row in self.ped_cursor.fetchall()]
-            self.combo_filtro_proveedor['values'] = ["Todos"] + proveedores
+            self.combo_filtro_proveedor['values'] = proveedores
             self.combo_filtro_proveedor.current(0)
 
             # Inicialmente productos vacíos
@@ -2176,7 +2176,7 @@ class SistemaContableApp:
                     WHERE p.proveedor = ?
                 """, (proveedor,))
             productos = [row[0] for row in self.ped_cursor.fetchall()]
-            self.combo_filtro_producto['values'] = ["Todos"] + productos
+            self.combo_filtro_producto['values'] = productos
             self.combo_filtro_producto.current(0)
         except Exception as e:
             messagebox.showerror("Error BD", f"No se pudieron cargar productos:\n{e}")
@@ -2228,41 +2228,26 @@ class SistemaContableApp:
     def cancelar_pedido_seleccionado(self):
         item_id = self.tabla_cancelar_pedidos.focus()
         if not item_id:
-            messagebox.showwarning("Seleccionar Pedido", "Seleccione un pedido para cancelar.")
+            messagebox.showwarning("Atención", "Seleccione un pedido para cancelar.")
             return
 
+        # Obtener datos del pedido
         codigo, proveedor, producto, cantidad, fecha, estado = self.tabla_cancelar_pedidos.item(item_id, "values")
 
-        if estado == "Cancelado":
-            messagebox.showinfo("Pedido ya cancelado", "Este pedido ya se encuentra cancelado.")
+        # VALIDACIÓN: solo cancelar si está pendiente
+        if estado != "Pendiente":
+            messagebox.showerror("Error", f"No se puede cancelar este pedido.\nEstado actual: {estado}")
             return
 
-        # Confirmación
-        if not messagebox.askyesno("Confirmar Cancelación", f"¿Desea cancelar el pedido {codigo}?"):
+        # Confirmación del usuario
+        if not messagebox.askyesno("Confirmar", f"¿Desea cancelar el pedido {codigo}?"):
             return
 
-        try:
-            # Actualizar base de datos
-            self.ped_cursor.execute("UPDATE pedidos SET estado = 'Cancelado' WHERE codigo_pedido = ?", (codigo,))
-            self.ped_con.commit()
+        # Actualizar visualmente en la tabla de filtros
+        self.tabla_cancelar_pedidos.item(item_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
 
-            # Actualizar visualmente la tabla
-            self.tabla_cancelar_pedidos.item(item_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
-
-            # Opcional: actualizar también la tabla principal de registro de pedidos
-            for row_id in self.tabla_registro_pedidos.get_children():
-                if self.tabla_registro_pedidos.item(row_id, "values")[0] == codigo:
-                    self.tabla_registro_pedidos.item(row_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
-
-            messagebox.showinfo("Pedido Cancelado", f"El pedido {codigo} ha sido cancelado.")
-
-        except Exception as e:
-            messagebox.showerror("Error BD", f"No se pudo cancelar el pedido:\n{e}")
-
-        self.tabla_pedidos_cancelados.insert("", "end", values=(
-            codigo, proveedor, producto, cantidad, fecha
-        ))
-
+        # Agregar a la tabla de pedidos cancelados
+        self.tabla_pedidos_cancelados.insert("", "end", values=(codigo, proveedor, producto, cantidad, fecha))
         self.lista_cancelados_sesion.append((codigo, proveedor, producto, cantidad, fecha))
 
     def eliminar_cancelados_bd(self):
