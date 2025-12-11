@@ -2285,6 +2285,23 @@ class SistemaContableApp:
         frame.grid_columnconfigure(0, weight=1)
         self.notebook.add(frame, text="Modificar Pedidos")
 
+        # === FILTRO DE ESTADO ===
+        ttk.Label(frame, text="Estado:").grid(row=0, column=0, padx=10, pady=(10,0), sticky="w")
+
+        self.filtro_estado_var = tk.StringVar()
+        self.filtro_estado = ttk.Combobox(
+            frame,
+            textvariable=self.filtro_estado_var,
+            values=["Todos", "Pendiente", "Completado"],
+            state="readonly",
+            width=20
+        )
+        self.filtro_estado.grid(row=0, column=0, padx=90, pady=(10,0), sticky="w")
+        self.filtro_estado.current(0)
+
+        # Cuando cambia el filtro → refrescar tabla
+        self.filtro_estado.bind("<<ComboboxSelected>>", lambda e: self.refrescar_tabla_mod_pedidos())
+
         self.ped_cursor.execute("""
             SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
             FROM pedidos p
@@ -2544,6 +2561,36 @@ class SistemaContableApp:
         # Insertar datos
         for f in facturas:
             tabla.insert("", "end", values=f)
+
+    def refrescar_tabla_mod_pedidos(self):
+        # Borrar contenido actual
+        for item in self.tabla_mod_pedidos.get_children():
+            self.tabla_mod_pedidos.delete(item)
+
+        # Obtener valor del filtro
+        estado_filtro = self.filtro_estado_var.get()
+
+        # Construir consulta
+        query = """
+            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+            FROM pedidos p
+            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+        """
+        params = ()
+
+        if estado_filtro != "Todos":
+            query += " WHERE p.estado = ?"
+            params = (estado_filtro,)
+
+        query += " ORDER BY p.fecha DESC, p.codigo_pedido DESC"
+
+        # Ejecutar consulta
+        self.ped_cursor.execute(query, params)
+        rows = self.ped_cursor.fetchall()
+
+        # Insertar filas
+        for row in rows:
+            self.tabla_mod_pedidos.insert("", "end", values=row)
 
 
 if __name__ == "__main__":
