@@ -1168,6 +1168,7 @@ class SistemaContableApp:
             graficar = figura.add_subplot(111)
             graficar.plot(meses, valores)
             graficar.set_title("Evolución precio {}($)".format(producto))
+            self.grafico1.config(borderwidth=0)
             canvas = FigureCanvasTkAgg(figura, master=self.grafico1)
             canvas.draw()
             canvas.get_tk_widget().pack()
@@ -1190,6 +1191,7 @@ class SistemaContableApp:
             graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
             graficar.yaxis.set_major_formatter(
                 mticker.FuncFormatter(lambda x, _: f"{x/1_000_000:.1f}"))
+            self.grafico3.config(borderwidth=0)
             canvas = FigureCanvasTkAgg(figura, master=self.grafico3)
             canvas.draw()
             canvas.get_tk_widget().pack()
@@ -1212,6 +1214,7 @@ class SistemaContableApp:
             graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
             graficar.yaxis.set_major_formatter(
                 mticker.FuncFormatter(lambda x, _: f"{x/1_000_000:.1f}"))
+            self.grafico2.config(borderwidth=0)
             canvas = FigureCanvasTkAgg(figura, master=self.grafico2)
             canvas.draw()
             canvas.get_tk_widget().pack()
