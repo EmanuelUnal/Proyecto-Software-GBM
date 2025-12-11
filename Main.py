@@ -1940,7 +1940,7 @@ class SistemaContableApp:
         self.entry_cantidad_pedido.grid(row=3, column=1, padx=10, pady=5)
 
         ttk.Label(frame, text="Estado del Pedido:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
-        self.combo_estado = ttk.Combobox(frame, values=["Pendiente", "En Proceso", "Entregado", "Cancelado"], width=20, state="readonly")
+        self.combo_estado = ttk.Combobox(frame, values=["Pendiente", "En Proceso", "Entregado"], width=20, state="readonly")
         self.combo_estado.grid(row=4, column=1, padx=10, pady=5)
         self.combo_estado.current(0)
 
@@ -1992,6 +1992,10 @@ class SistemaContableApp:
                 self.tabla_registro_pedidos.insert("", "end", values=row)
         except Exception:
             pass
+        scrollbar_registro = ttk.Scrollbar(frame, orient="vertical", command=self.tabla_registro_pedidos.yview)
+        self.tabla_registro_pedidos.configure(yscroll=scrollbar_registro.set)
+        scrollbar_registro.grid(row=1, column=4, rowspan=10, sticky="ns", padx=(0,10))
+
     def editar_pedido(self, event):
         item_id = self.tabla_registro_pedidos.focus()
         if not item_id:
@@ -2111,6 +2115,31 @@ class SistemaContableApp:
 
         # --- Cargar valores iniciales para los filtros ---
         self.actualizar_filtros_cancelar()
+        ttk.Label(frame, text="Pedidos Cancelados en esta sesión").grid(
+            row=0, column=3, padx=10, pady=5, sticky="w"
+        )
+
+        columnas_cancelados = ("codigo", "proveedor", "producto", "cantidad", "fecha")
+        self.tabla_pedidos_cancelados = ttk.Treeview(
+            frame, columns=columnas_cancelados, show="headings", height=15
+        )
+
+        for col in columnas_cancelados:
+            self.tabla_pedidos_cancelados.heading(col, text=col.capitalize())
+            self.tabla_pedidos_cancelados.column(col, width=120, anchor="center")
+
+        self.tabla_pedidos_cancelados.grid(
+            row=1, column=3, rowspan=3, padx=10, pady=10, sticky="nsew"
+        )
+
+        # Botón para actualizar la base de datos (ELIMINAR DEFINITIVAMENTE)
+        ttk.Button(frame, text="Actualizar Base de Datos",
+                   command=self.eliminar_cancelados_bd).grid(
+            row=4, column=3, pady=15
+        )
+
+        # Lista temporal para almacenar los pedidos cancelados
+        self.lista_cancelados_sesion = []
 
     # ---------------------------------------------
     # Función para actualizar los valores de los filtros
@@ -2230,7 +2259,64 @@ class SistemaContableApp:
         except Exception as e:
             messagebox.showerror("Error BD", f"No se pudo cancelar el pedido:\n{e}")
 
+        self.tabla_pedidos_cancelados.insert("", "end", values=(
+            codigo, proveedor, producto, cantidad, fecha
+        ))
 
+        self.lista_cancelados_sesion.append((codigo, proveedor, producto, cantidad, fecha))
+
+    def eliminar_cancelados_bd(self):
+        if not self.lista_cancelados_sesion:
+            messagebox.showinfo("Sin cambios", "No hay pedidos cancelados para eliminar.")
+            return
+
+        try:
+            for item in self.lista_cancelados_sesion:
+                codigo = item[0]
+
+                # eliminar items
+                self.ped_cursor.execute(
+                    "DELETE FROM pedido_items WHERE codigo_pedido=?",
+                    (codigo,)
+                )
+                # eliminar pedido principal
+                self.ped_cursor.execute(
+                    "DELETE FROM pedidos WHERE codigo_pedido=?",
+                    (codigo,)
+                )
+
+            self.ped_con.commit()
+
+            # borrar tabla visual
+            for child in self.tabla_pedidos_cancelados.get_children():
+                self.tabla_pedidos_cancelados.delete(child)
+
+            self.lista_cancelados_sesion.clear()
+
+            messagebox.showinfo("Éxito", "La base de datos ha sido actualizada. Los pedidos cancelados fueron eliminados.")
+
+            # actualizar otros módulos si los tienes
+            self.actualizar_filtros_cancelar()
+            self.recargar_tabla_registro_pedidos()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo actualizar la base de datos:\n{e}")
+
+    def recargar_tabla_registro_pedidos(self):
+            # Vaciar
+            for item in self.tabla_registro_pedidos.get_children():
+                self.tabla_registro_pedidos.delete(item)
+
+            # Cargar de nuevo
+            self.ped_cursor.execute("""
+                SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
+                FROM pedidos p
+                JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
+                ORDER BY p.fecha DESC, p.codigo_pedido DESC
+            """)
+            for row in self.ped_cursor.fetchall():
+                self.tabla_registro_pedidos.insert("", "end", values=row)
+   
         
     def crear_tab_retenciones(self):
         frame_retenciones = ttk.Frame(self.notebook)
@@ -2284,23 +2370,6 @@ class SistemaContableApp:
         frame.grid_rowconfigure(2, weight=1)
         frame.grid_columnconfigure(0, weight=1)
         self.notebook.add(frame, text="Modificar Pedidos")
-
-        # === FILTRO DE ESTADO ===
-        ttk.Label(frame, text="Estado:").grid(row=0, column=0, padx=10, pady=(10,0), sticky="w")
-
-        self.filtro_estado_var = tk.StringVar()
-        self.filtro_estado = ttk.Combobox(
-            frame,
-            textvariable=self.filtro_estado_var,
-            values=["Todos", "Pendiente", "Completado"],
-            state="readonly",
-            width=20
-        )
-        self.filtro_estado.grid(row=0, column=0, padx=90, pady=(10,0), sticky="w")
-        self.filtro_estado.current(0)
-
-        # Cuando cambia el filtro → refrescar tabla
-        self.filtro_estado.bind("<<ComboboxSelected>>", lambda e: self.refrescar_tabla_mod_pedidos())
 
         self.ped_cursor.execute("""
             SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
@@ -2561,36 +2630,6 @@ class SistemaContableApp:
         # Insertar datos
         for f in facturas:
             tabla.insert("", "end", values=f)
-
-    def refrescar_tabla_mod_pedidos(self):
-        # Borrar contenido actual
-        for item in self.tabla_mod_pedidos.get_children():
-            self.tabla_mod_pedidos.delete(item)
-
-        # Obtener valor del filtro
-        estado_filtro = self.filtro_estado_var.get()
-
-        # Construir consulta
-        query = """
-            SELECT p.codigo_pedido, p.proveedor, i.producto, i.cantidad, p.fecha, p.estado
-            FROM pedidos p
-            JOIN pedido_items i ON p.codigo_pedido = i.codigo_pedido
-        """
-        params = ()
-
-        if estado_filtro != "Todos":
-            query += " WHERE p.estado = ?"
-            params = (estado_filtro,)
-
-        query += " ORDER BY p.fecha DESC, p.codigo_pedido DESC"
-
-        # Ejecutar consulta
-        self.ped_cursor.execute(query, params)
-        rows = self.ped_cursor.fetchall()
-
-        # Insertar filas
-        for row in rows:
-            self.tabla_mod_pedidos.insert("", "end", values=row)
 
 
 if __name__ == "__main__":
