@@ -1168,6 +1168,7 @@ class SistemaContableApp:
             graficar = figura.add_subplot(111)
             graficar.plot(meses, valores)
             graficar.set_title("Evolución precio {}($)".format(producto))
+            self.grafico1.config(borderwidth=0)
             canvas = FigureCanvasTkAgg(figura, master=self.grafico1)
             canvas.draw()
             canvas.get_tk_widget().pack()
@@ -1190,6 +1191,7 @@ class SistemaContableApp:
             graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
             graficar.yaxis.set_major_formatter(
                 mticker.FuncFormatter(lambda x, _: f"{x/1_000_000:.1f}"))
+            self.grafico3.config(borderwidth=0)
             canvas = FigureCanvasTkAgg(figura, master=self.grafico3)
             canvas.draw()
             canvas.get_tk_widget().pack()
@@ -1212,6 +1214,7 @@ class SistemaContableApp:
             graficar.ticklabel_format(style='plain', axis='y')     # desactiva notación científica
             graficar.yaxis.set_major_formatter(
                 mticker.FuncFormatter(lambda x, _: f"{x/1_000_000:.1f}"))
+            self.grafico2.config(borderwidth=0)
             canvas = FigureCanvasTkAgg(figura, master=self.grafico2)
             canvas.draw()
             canvas.get_tk_widget().pack()
@@ -2122,7 +2125,7 @@ class SistemaContableApp:
             row=0, column=3, padx=10, pady=5, sticky="w"
         )
 
-        columnas_cancelados = ("codigo", "proveedor", "producto", "cantidad", "fecha")
+        columnas_cancelados = ("codigo", "proveedor", "producto", "cantidad", "fecha","motivo")
         self.tabla_pedidos_cancelados = ttk.Treeview(
             frame, columns=columnas_cancelados, show="headings", height=15
         )
@@ -2242,17 +2245,56 @@ class SistemaContableApp:
             messagebox.showerror("Error", f"No se puede cancelar este pedido.\nEstado actual: {estado}")
             return
 
-        # Confirmación del usuario
-        if not messagebox.askyesno("Confirmar", f"¿Desea cancelar el pedido {codigo}?"):
-            return
+        # Ventana para seleccionar motivo
+        ventana_motivo = tk.Toplevel()
+        ventana_motivo.title(f"Motivo de cancelación - Pedido {codigo}")
+        ventana_motivo.grab_set()
 
-        # Actualizar visualmente en la tabla de filtros
-        self.tabla_cancelar_pedidos.item(item_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
+        ttk.Label(ventana_motivo, text="Seleccione un motivo:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
-        # Agregar a la tabla de pedidos cancelados
-        self.tabla_pedidos_cancelados.insert("", "end", values=(codigo, proveedor, producto, cantidad, fecha))
-        self.lista_cancelados_sesion.append((codigo, proveedor, producto, cantidad, fecha))
+        opciones_motivo = ["Pedido no deseado", "Motivo externo", "Motivo interno", "Otro"]
+        combo_motivo = ttk.Combobox(ventana_motivo, values=opciones_motivo, state="readonly")
+        combo_motivo.grid(row=0, column=1, padx=10, pady=5)
+        combo_motivo.current(0)
 
+        # Entrada para motivo personalizado, inicialmente deshabilitada
+        entry_motivo_otro = ttk.Entry(ventana_motivo, width=40, state="disabled")
+        entry_motivo_otro.grid(row=1, column=1, padx=10, pady=5)
+        ttk.Label(ventana_motivo, text="Si selecciona 'Otro', escriba el motivo:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+        # Activar/desactivar la entrada según selección
+        def verificar_otro(event):
+            if combo_motivo.get() == "Otro":
+                entry_motivo_otro.config(state="normal")
+            else:
+                entry_motivo_otro.delete(0, tk.END)
+                entry_motivo_otro.config(state="disabled")
+
+        combo_motivo.bind("<<ComboboxSelected>>", verificar_otro)
+
+        def confirmar_motivo():
+            motivo = combo_motivo.get()
+            if motivo == "Otro":
+                motivo = entry_motivo_otro.get().strip()
+                if not motivo:
+                    messagebox.showerror("Error", "Debe escribir un motivo para 'Otro'.")
+                    return
+
+            # Confirmación final
+            if not messagebox.askyesno("Confirmar", f"¿Desea cancelar el pedido {codigo}?\nMotivo: {motivo}"):
+                return
+
+            # Actualizar visualmente en tabla de filtros
+            self.tabla_cancelar_pedidos.item(item_id, values=(codigo, proveedor, producto, cantidad, fecha, "Cancelado"))
+
+            # Agregar a tabla de pedidos cancelados con nueva columna "Motivo"
+            self.tabla_pedidos_cancelados.insert("", "end", values=(codigo, proveedor, producto, cantidad, fecha, motivo))
+            self.lista_cancelados_sesion.append((codigo, proveedor, producto, cantidad, fecha, motivo))
+
+            ventana_motivo.destroy()
+
+        ttk.Button(ventana_motivo, text="Confirmar", command=confirmar_motivo).grid(row=2, column=0, columnspan=2, pady=10)
+        
     def eliminar_cancelados_bd(self):
         if not self.lista_cancelados_sesion:
             messagebox.showinfo("Sin cambios", "No hay pedidos cancelados para eliminar.")
