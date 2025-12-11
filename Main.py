@@ -1880,21 +1880,17 @@ class SistemaContableApp:
             messagebox.showerror("Error", "Fecha inválida. Use formato YYYY-MM-DD.")
             return
 
-        self.ped_cursor.execute("SELECT codigo_pedido FROM pedidos ORDER BY codigo_pedido DESC LIMIT 1")
-        ultimo = self.ped_cursor.fetchone()
+        # Generar código único para el pedido
+        codigo_pedido = None
+        numero = 5001
+        while True:
+            codigo_pedido = f"PD{numero}"
+            self.ped_cursor.execute("SELECT 1 FROM pedidos WHERE codigo_pedido = ?", (codigo_pedido,))
+            if not self.ped_cursor.fetchone():
+                # Código no existe, lo podemos usar
+                break
+            numero += 1
         
-        if ultimo:
-            # ultimo[0] → 'PD5012' por ejemplo
-            if ultimo[0][:2] == "pe":
-                numero = int(ultimo[0].replace("pe", ""))
-            else:
-                numero = int(ultimo[0].replace("PD", ""))
-            nuevo_numero = numero + 1
-        else:
-            # Si es la primera vez o la base está vacía
-            nuevo_numero = 5001  # o donde quieras empezar
-        
-        codigo_pedido = f"PD{nuevo_numero}"
         # Guardar pedido en pedidos.db
         try:
             self.ped_cursor.execute("INSERT INTO pedidos (codigo_pedido, proveedor, fecha, estado) VALUES (?, ?, ?, ?)",
