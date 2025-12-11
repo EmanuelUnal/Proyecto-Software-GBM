@@ -682,7 +682,7 @@ class SistemaContableApp:
         self.entry_codigo_pedido = ttk.Entry(codes_box)
         self.entry_codigo_pedido.grid(row=0, column=3, sticky="w", padx=6, pady=4)
 
-        ttk.Button(codes_box, text="Agregar Producto", command=self.agregar_producto).grid(row=0, column=4, padx=10, pady=4)
+        ttk.Button(codes_box, text="Guardar factura", command=self.guardar_factura).grid(row=0, column=4, padx=10, pady=4)
 
         # intentar mostrar la firma actual (si existe)
         try:
@@ -1882,7 +1882,10 @@ class SistemaContableApp:
         
         if ultimo:
             # ultimo[0] → 'PD5012' por ejemplo
-            numero = int(ultimo[0].replace("PD", ""))
+            if ultimo[0][:2] == "pe":
+                numero = int(ultimo[0].replace("pe", ""))
+            else:
+                numero = int(ultimo[0].replace("PD", ""))
             nuevo_numero = numero + 1
         else:
             # Si es la primera vez o la base está vacía
